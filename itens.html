@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Itens | Almoxarifado</title>
+    <meta name="theme-color" content="#1e293b">
+    <meta name="application-name" content="Almoxarifado">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/app-icon.svg">
+    <script>
+        (function () {
+            var knownThemes = {
+                "default": "#1e293b",
+                "light": "#ffffff"
+            };
+            var themeMetaColor = document.querySelector('meta[name="theme-color"]');
+
+            try {
+                var savedTheme = localStorage.getItem("almox_theme") || "default";
+                var normalizedTheme = Object.prototype.hasOwnProperty.call(knownThemes, savedTheme) ? savedTheme : "default";
+                document.documentElement.setAttribute("data-theme", normalizedTheme);
+                if (themeMetaColor) {
+                    themeMetaColor.setAttribute("content", knownThemes[normalizedTheme]);
+                }
+            } catch (error) {
+                document.documentElement.setAttribute("data-theme", "default");
+                if (themeMetaColor) {
+                    themeMetaColor.setAttribute("content", knownThemes["default"]);
+                }
+            }
+        }());
+    </script>
+    <link rel="stylesheet" href="style.CSS">
+    <link rel="stylesheet" href="theme.CSS">
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <div class="page-title-group">
+                <a class="page-link no-print" id="linkVoltarSaidas" href="index.html">Voltar para saídas</a>
+                <h2>ITENS CADASTRADOS</h2>
+                <p class="page-subtitle" id="subtituloPaginaItens">Gerencie o catálogo de peças em uma tela dedicada.</p>
+            </div>
+
+            <div class="header-actions no-print">
+                <button class="btn-settings-header" type="button" data-settings-open aria-controls="modalConfiguracoes" aria-haspopup="dialog">CONFIG.</button>
+                <a class="btn-itens-header" id="btnVoltarOrigem" href="index.html">SAIDAS</a>
+            </div>
+        </div>
+
+        <div class="page-layout">
+            <section class="page-panel page-panel-form">
+                <div class="page-section-head">
+                    <div>
+                        <h3>Cadastrar item</h3>
+                        <p class="page-subtitle">Salve novos códigos ou atualize descrições existentes.</p>
+                    </div>
+                </div>
+
+                <form id="formCadastroItem">
+                    <input type="hidden" id="cadCodigoOriginal" value="">
+
+                    <div class="input-box input-box-spaced-sm">
+                        <label for="cadCodigo">Código da peça</label>
+                        <input type="text" id="cadCodigo" required autocomplete="off">
+                    </div>
+
+                    <div class="input-box">
+                        <label for="cadDescricao">Descrição do item</label>
+                        <input type="text" id="cadDescricao" oninput="this.value = this.value.toUpperCase()" required autocomplete="off">
+                    </div>
+
+                    <div class="page-actions">
+                        <button type="submit" class="btn-add" id="btnSalvarItem">Salvar</button>
+                        <button type="button" class="btn-cancel" id="btnCancelarEdicaoItem" hidden>Cancelar edição</button>
+                    </div>
+                </form>
+
+                <p class="page-status" id="mensagemPaginaItens"></p>
+            </section>
+
+            <section class="page-panel page-panel-scroll">
+                <div class="page-section-head">
+                    <div>
+                        <h3>Catálogo</h3>
+                        <p class="page-subtitle">Busque, revise, edite ou remova os itens cadastrados.</p>
+                    </div>
+                    <span class="result-meta" id="contadorItensCatalogo">0 itens</span>
+                </div>
+
+                <div class="catalog-toolbar">
+                    <div class="input-box">
+                        <label for="buscaItemCatalogo">Buscar no catálogo</label>
+                        <input type="text" id="buscaItemCatalogo" placeholder="Código ou descrição" autocomplete="off">
+                    </div>
+                    <div class="catalog-toolbar-actions no-print">
+                        <button type="button" class="btn-import" id="btnImportarCatalogo" onclick="importarDados()">Importar dados</button>
+                    </div>
+                </div>
+
+                <div id="listaItensCadastrados" class="scrollable-list catalog-list"></div>
+            </section>
+        </div>
+    </div>
+
+    <div id="modalAtencao" class="modal">
+        <div class="modal-content modal-critical-card" role="alertdialog" aria-modal="true" aria-labelledby="modalAtencaoTitulo" aria-describedby="modalAtencaoMensagem">
+            <span class="modal-critical-badge" id="modalAtencaoBadge">Confirmação</span>
+            <h3 id="modalAtencaoTitulo" class="modal-critical-title">Confirmar ação</h3>
+            <p id="modalAtencaoMensagem" class="modal-critical-message"></p>
+            <p id="modalAtencaoDetalhe" class="modal-critical-detail" hidden></p>
+            <div class="modal-critical-actions">
+                <button class="btn-cancel" id="btnModalAtencaoCancelar" type="button">Cancelar</button>
+                <button class="btn-danger" id="btnModalAtencaoConfirmar" type="button">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalConfiguracoes" class="modal" aria-hidden="true">
+        <div class="modal-content modal-content-has-close settings-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalConfiguracoes" aria-describedby="descricaoModalConfiguracoes">
+            <button class="close" type="button" aria-label="Fechar configurações" data-settings-close>&times;</button>
+
+            <div class="settings-layout">
+                <div class="settings-hero">
+                    <span class="modal-critical-badge">Central do catálogo</span>
+                    <h3 id="tituloModalConfiguracoes" class="settings-title">Configurações</h3>
+                    <p id="descricaoModalConfiguracoes" class="settings-subtitle">Reúna o tema, a instalação do app e atalhos úteis para trabalhar com o catálogo de itens.</p>
+                </div>
+
+                <div class="settings-grid">
+                    <section class="settings-card">
+                        <div class="settings-card-head">
+                            <h4>Aparência</h4>
+                            <p>Alterne o tema da tela de cadastro e da consulta.</p>
+                        </div>
+
+                        <label class="settings-field" for="themeSelect">
+                            <span class="theme-label">Tema</span>
+                            <select id="themeSelect" class="theme-select" aria-label="Selecionar tema" data-settings-focus>
+                                <option value="default">Padr&atilde;o</option>
+                                <option value="light">Claro</option>
+                            </select>
+                        </label>
+                    </section>
+
+                    <section class="settings-card">
+                        <div class="settings-card-head">
+                            <h4>Aplicativo</h4>
+                            <p>Instale o Almoxarifado e mantenha o acesso rápido ao catálogo.</p>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn-install" type="button" data-install-button hidden>Instalar aplicativo</button>
+                        </div>
+
+                        <p class="settings-note">A disponibilidade depende do navegador e do contexto seguro da página.</p>
+                    </section>
+
+                    <section class="settings-card settings-card-wide">
+                        <div class="settings-card-head">
+                            <h4>Fluxo de trabalho</h4>
+                            <p>Atalhos para alternar entre cadastro, pesquisa e retorno ao painel principal.</p>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn-add" type="button" onclick="abrirCadastroPelasConfiguracoes()">Novo cadastro</button>
+                            <button class="btn-print" type="button" onclick="abrirBuscaPelasConfiguracoes()">Buscar no catálogo</button>
+                            <button class="btn-export" type="button" onclick="fecharModalConfiguracoes(); exportarTodosDados();">Exportar tudo</button>
+                            <button class="btn-import" type="button" onclick="fecharModalConfiguracoes(); importarDados();">Importar dados</button>
+                            <button class="btn-itens-header" type="button" onclick="fecharModalConfiguracoes(); window.location.href='index.html';">Ir para saídas</button>
+                        </div>
+                    </section>
+
+                    <section class="settings-card settings-card-wide settings-card-danger">
+                        <div class="settings-card-head">
+                            <h4>Manutenção</h4>
+                            <p>Use esta área com cuidado para preservar o histórico de movimentações.</p>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn-warning" type="button" onclick="fecharModalConfiguracoes(); restaurarBackupAutomatico();">Restaurar backup</button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="theme.js"></script>
+    <script src="items.js"></script>
+</body>
+</html>

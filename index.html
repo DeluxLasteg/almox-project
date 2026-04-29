@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Almoxarifado v0.16</title>
+    <meta name="theme-color" content="#1e293b">
+    <meta name="application-name" content="Almoxarifado">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/app-icon.svg">
+    <script>
+        (function () {
+            var knownThemes = {
+                "default": "#1e293b",
+                "light": "#ffffff"
+            };
+            var themeMetaColor = document.querySelector('meta[name="theme-color"]');
+
+            try {
+                var savedTheme = localStorage.getItem("almox_theme") || "default";
+                var normalizedTheme = Object.prototype.hasOwnProperty.call(knownThemes, savedTheme) ? savedTheme : "default";
+                document.documentElement.setAttribute("data-theme", normalizedTheme);
+                if (themeMetaColor) {
+                    themeMetaColor.setAttribute("content", knownThemes[normalizedTheme]);
+                }
+            } catch (error) {
+                document.documentElement.setAttribute("data-theme", "default");
+                if (themeMetaColor) {
+                    themeMetaColor.setAttribute("content", knownThemes["default"]);
+                }
+            }
+        }());
+    </script>
+    <link rel="stylesheet" href="style.CSS">
+    <link rel="stylesheet" href="theme.CSS">
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <h2>ALMOXARIFADO</h2>
+
+            <div class="header-actions no-print">
+                <div class="retractable-tab">
+                    <button class="btn-menu-toggle" type="button" id="btnMenuToggle" aria-label="Abrir menu" aria-expanded="false">
+                        <span class="menu-icon"></span>
+                    </button>
+                    <div class="retractable-content" id="retractableContent" hidden>
+                        <button type="button" class="btn-future-action" data-action="relatorios">RELATÓRIOS</button>
+                        <button type="button" class="btn-future-action" data-action="estoque">ESTOQUE</button>
+                        <button type="button" class="btn-future-action" data-action="fornecedores">FORNECEDORES</button>
+                        <button type="button" class="btn-future-action" data-action="usuarios">USUÁRIOS</button>
+                        <button type="button" class="btn-future-action" data-action="historico">HISTÓRICO</button>
+                        <button type="button" class="btn-future-action" data-action="configuracoes">CONFIGURAÇÕES</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="formSaida">
+            <input type="hidden" id="editId" value="">
+            <input type="hidden" id="editData" value="">
+
+            <div class="form-group" id="containerCampos">
+                <div class="input-box">
+                    <label for="frota">N&ordm; Frota</label>
+                    <input type="text" id="frota" placeholder="Ex: 1025" required autocomplete="off">
+                </div>
+
+                <div class="input-box">
+                    <label for="codigoPeca">Cód. Peça</label>
+                    <input type="text" id="codigoPeca" placeholder="Digite o código" required autocomplete="off">
+                    <div id="sugestaoItem" class="sugestao-card" hidden></div>
+                </div>
+
+                <div class="input-box">
+                    <label for="quantidade">Qtd</label>
+                    <input type="number" id="quantidade" min="1" required>
+                </div>
+
+                <div class="input-box wide">
+                    <label for="descricao">Descrição</label>
+                    <input type="text" id="descricao" placeholder="Preenchimento automático" oninput="this.value = this.value.toUpperCase()" required autocomplete="off">
+                </div>
+
+                <div class="input-box input-box-optional" id="inputBoxOrdemServico">
+                    <label for="ordemServico">N&ordm; OS</label>
+                    <input type="text" id="ordemServico" placeholder="Clique para preencher" autocomplete="off" readonly tabindex="-1" aria-readonly="true">
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn-add" id="btnSubmit">Registrar saída</button>
+                <button type="button" class="btn-cancel" id="btnCancel" hidden onclick="resetarFormulario(false)">Cancelar</button>
+                <button type="button" class="btn-print no-print" onclick="window.print()">Imprimir</button>
+                <button type="button" class="btn-export no-print" onclick="exportarCSV()">Excel</button>
+            </div>
+        </form>
+
+        <section class="crud-overview no-print">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Registros</span>
+                    <strong class="stat-value" id="statRegistros">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Quantidade total</span>
+                    <strong class="stat-value" id="statQuantidade">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Frotas ativas</span>
+                    <strong class="stat-value" id="statFrotas">0</strong>
+                </div>
+            </div>
+
+            <div class="crud-toolbar">
+                <div class="input-box">
+                    <label for="buscaSaida">Buscar nas saídas</label>
+                    <input type="text" id="buscaSaida" placeholder="Frota, código, descrição ou OS" autocomplete="off">
+                </div>
+                <button type="button" class="btn-print" id="btnLimparBuscaSaida">Limpar busca</button>
+            </div>
+
+            <p class="result-meta" id="resumoBuscaSaida">Exibindo todos os registros.</p>
+        </section>
+
+        <div id="listaFrotas"></div>
+        <section id="listaImpressao" class="print-sheet" aria-hidden="true"></section>
+        <button class="btn-clear no-print" type="button" onclick="limparTudo()">Limpar tudo</button>
+    </div>
+
+    <div id="modalItens" class="modal">
+        <div class="modal-content modal-content-has-close">
+            <button class="close" type="button" aria-label="Fechar cadastro de itens" onclick="fecharModalItens()">&times;</button>
+            <h3 id="tituloModalItens" class="modal-title-primary">Gerenciar itens</h3>
+
+            <form id="formCadastroItem">
+                <input type="hidden" id="cadCodigoOriginal" value="">
+                <div class="input-box input-box-spaced-sm">
+                    <label for="cadCodigo">Código da peça</label>
+                    <input type="text" id="cadCodigo" required autocomplete="off">
+                </div>
+
+                <div class="input-box input-box-spaced-md">
+                    <label for="cadDescricao">Descrição do item</label>
+                    <input type="text" id="cadDescricao" oninput="this.value = this.value.toUpperCase()" required autocomplete="off">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-add btn-flex-grow" id="btnSalvarItem">Salvar</button>
+                    <button type="button" class="btn-cancel btn-flex-grow" id="btnCancelarEdicaoItem" hidden>Cancelar edição</button>
+                </div>
+            </form>
+
+            <div class="catalog-toolbar">
+                <div class="input-box">
+                    <label for="buscaItemCatalogo">Buscar no catálogo</label>
+                    <input type="text" id="buscaItemCatalogo" placeholder="Código ou descrição" autocomplete="off">
+                </div>
+                <span class="result-meta" id="contadorItensCatalogo">0 itens</span>
+            </div>
+
+            <div id="listaItensCadastrados" class="scrollable-list"></div>
+        </div>
+    </div>
+
+    <div id="modalConfirmacao" class="modal">
+        <div class="modal-content modal-critical-card modal-critical-card-warning" role="alertdialog" aria-modal="true" aria-labelledby="tituloModalConfirmacao" aria-describedby="descricaoModalConfirmacao">
+            <span class="modal-critical-badge">Atenção total</span>
+            <h3 id="tituloModalConfirmacao" class="modal-critical-title">Item não cadastrado</h3>
+            <p id="descricaoModalConfirmacao" class="modal-critical-message">O código <strong id="codigoNaoEncontrado" class="text-primary-emphasis"></strong> não existe no catálogo.</p>
+            <p class="modal-critical-detail">Você pode abrir a página de itens para cadastrar agora ou seguir apenas nesta movimentação.</p>
+            <div class="modal-critical-actions">
+                <button class="btn-add" id="btnConfirmCadastrar" type="button" onclick="responderConfirmacaoItem(true)">Cadastrar agora</button>
+                <button class="btn-cancel" id="btnConfirmAvulso" type="button" onclick="responderConfirmacaoItem(false)">Só desta vez</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalAtencao" class="modal">
+        <div class="modal-content modal-critical-card" role="alertdialog" aria-modal="true" aria-labelledby="modalAtencaoTitulo" aria-describedby="modalAtencaoMensagem">
+            <span class="modal-critical-badge" id="modalAtencaoBadge">Confirmação</span>
+            <h3 id="modalAtencaoTitulo" class="modal-critical-title">Confirmar ação</h3>
+            <p id="modalAtencaoMensagem" class="modal-critical-message"></p>
+            <p id="modalAtencaoDetalhe" class="modal-critical-detail" hidden></p>
+            <div class="modal-critical-actions">
+                <button class="btn-cancel" id="btnModalAtencaoCancelar" type="button">Cancelar</button>
+                <button class="btn-danger" id="btnModalAtencaoConfirmar" type="button">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalConfiguracoes" class="modal" aria-hidden="true">
+        <div class="modal-content modal-content-has-close settings-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalConfiguracoes" aria-describedby="descricaoModalConfiguracoes">
+            <button class="close" type="button" aria-label="Fechar configurações" data-settings-close>&times;</button>
+
+            <div class="settings-layout">
+                <div class="settings-hero">
+                    <span class="modal-critical-badge">Central do app</span>
+                    <h3 id="tituloModalConfiguracoes" class="settings-title">Configurações</h3>
+                    <p id="descricaoModalConfiguracoes" class="settings-subtitle">Ajuste o visual, acesse a instalação do app e dispare ações rápidas do almoxarifado em um único lugar.</p>
+                </div>
+
+                <div class="settings-grid">
+                    <section class="settings-card">
+                        <div class="settings-card-head">
+                            <h4>Aparência</h4>
+                            <p>Defina como o sistema aparece para o time.</p>
+                        </div>
+
+                        <label class="settings-field" for="themeSelect">
+                            <span class="theme-label">Tema</span>
+                            <select id="themeSelect" class="theme-select" aria-label="Selecionar tema" data-settings-focus>
+                                <option value="default">Padr&atilde;o</option>
+                                <option value="light">Claro</option>
+                            </select>
+                        </label>
+                    </section>
+
+                    <section class="settings-card">
+                        <div class="settings-card-head">
+                            <h4>Aplicativo</h4>
+                            <p>Use o Almoxarifado como app e mantenha o acesso rápido.</p>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn-install" type="button" data-install-button hidden>Instalar aplicativo</button>
+                        </div>
+
+                        <p class="settings-note">Se o navegador permitir, a instalação ficará disponível aqui automaticamente.</p>
+                    </section>
+
+                    <section class="settings-card settings-card-wide">
+                        <div class="settings-card-head">
+                            <h4>Ações rápidas</h4>
+                            <p>Atalhos para as tarefas mais usadas na tela principal.</p>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn-print" type="button" onclick="fecharModalConfiguracoes(); window.print();">Imprimir tela</button>
+                            <button class="btn-export" type="button" onclick="fecharModalConfiguracoes(); exportarCSV();">Exportar CSV</button>
+                            <button class="btn-export" type="button" onclick="fecharModalConfiguracoes(); exportarTodosDados();">Exportar tudo</button>
+                            <button class="btn-import" type="button" onclick="fecharModalConfiguracoes(); importarDados();">Importar dados</button>
+                            <button class="btn-itens-header" type="button" onclick="fecharModalConfiguracoes(); abrirPaginaItens();">Abrir itens</button>
+                        </div>
+                    </section>
+
+                    <section class="settings-card settings-card-wide settings-card-danger">
+                        <div class="settings-card-head">
+                            <h4>Manutenção</h4>
+                            <p>Use esta área com cuidado para preservar o histórico de movimentações.</p>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button class="btn-warning" type="button" onclick="fecharModalConfiguracoes(); restaurarBackupAutomatico();">Restaurar backup</button>
+                            <button class="btn-danger" type="button" onclick="fecharModalConfiguracoes(); limparTudo();">Limpar histórico</button>
+                        </div>
+
+                        <p class="settings-note">O catálogo de itens será mantido. Apenas o histórico de saídas será removido.</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="theme.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>
