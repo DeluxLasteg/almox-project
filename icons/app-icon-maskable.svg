@@ -10,5 +10,8 @@
   <rect x="146" y="138" width="220" height="236" rx="34" fill="#e0f2fe" opacity="0.2"/>
   <path d="M186 210h140v24H186zm0 54h112v24H186zm0 54h90v24h-90z" fill="#dbeafe"/>
   <path d="M318 302l-28 29-16-16-18 18 34 34 48-49z" fill="#f8fafc"/>
-  <text x="184" y="182" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="42" font-weight="700">AL</text>
+  <!-- Letra A estilizada como forma vetorial -->
+  <path d="M256 165 L185 315 L210 315 L227 280 L285 280 L302 315 L327 315 L256 165ZM238 265 L256 230 L274 265 L264 265 L256 245 L248 265 L238 265Z" fill="#f8fafc"/>
+  <!-- Letra M estilizada como forma vetorial -->
+  <path d="M345 315 L345 210 L365 210 L365 260 L382 210 L402 210 L402 315 L382 315 L382 245 L365 295 L365 315 L345 315Z" fill="#dbeafe"/>
 </svg>

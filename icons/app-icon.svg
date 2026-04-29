@@ -9,5 +9,8 @@
   <rect x="92" y="112" width="328" height="288" rx="42" fill="#f8fafc" opacity="0.16"/>
   <path d="M156 198h200v28H156zm0 60h144v28H156zm0 60h116v28H156z" fill="#bfdbfe"/>
   <path d="M340 306l-36 37-20-20-20 20 40 40 56-57z" fill="#f8fafc"/>
-  <text x="154" y="154" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="700">AL</text>
+  <!-- Letra A estilizada como forma vetorial -->
+  <path d="M256 160 L176 320 L206 320 L226 280 L286 280 L306 320 L336 320 L256 160ZM236 260 L256 220 L276 260 L266 260 L256 235 L246 260 L236 260Z" fill="#f8fafc"/>
+  <!-- Letra M estilizada como forma vetorial -->
+  <path d="M340 320 L340 200 L365 200 L365 260 L385 200 L410 200 L410 320 L385 320 L385 240 L365 300 L365 320 L340 320Z" fill="#bfdbfe"/>
 </svg>

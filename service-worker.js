@@ -1,4 +1,4 @@
-const CACHE_NAME = "almox-shell-v6";
+const CACHE_NAME = "almox-shell-v7";
 const APP_SHELL_FILES = [
     "./",
     "./index.html",
@@ -11,7 +11,9 @@ const APP_SHELL_FILES = [
     "./items.js",
     "./manifest.webmanifest",
     "./icons/app-icon.svg",
-    "./icons/app-icon-maskable.svg"
+    "./icons/app-icon-maskable.svg",
+    "./icons/app-icon-192.png",
+    "./icons/app-icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
