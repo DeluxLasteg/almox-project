@@ -17,25 +17,25 @@
     "icons": [
         {
             "src": "./icons/image1.png",
-            "sizes": "48x48 72x72 96x96 144x144 192x192 512x512",
+            "sizes": "auto",
             "type": "image/png",
             "purpose": "any"
         },
         {
             "src": "./icons/image2.png",
-            "sizes": "48x48 72x72 96x96 144x144 192x192 512x512",
+            "sizes": "auto",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
             "src": "./icons/image3.png",
-            "sizes": "192x192",
+            "sizes": "auto",
             "type": "image/png",
             "purpose": "any"
         },
         {
             "src": "./icons/image4.png",
-            "sizes": "512x512",
+            "sizes": "auto",
             "type": "image/png",
             "purpose": "any"
         }
