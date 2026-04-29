@@ -16,15 +16,15 @@
     ],
     "icons": [
         {
-            "src": "./icons/app-icon.svg",
+            "src": "./icons/app-icon-192.png",
             "sizes": "48x48 72x72 96x96 144x144 192x192 512x512",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "./icons/app-icon-maskable.svg",
+            "src": "./icons/app-icon-maskable.png",
             "sizes": "48x48 72x72 96x96 144x144 192x192 512x512",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "maskable"
         },
         {
