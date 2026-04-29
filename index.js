@@ -107,6 +107,10 @@ function inicializarEventos() {
                     window.location.href = "itens.html";
                     return;
                 }
+                if (action === "configuracoes") {
+                    window.location.href = "configuracoes.html";
+                    return;
+                }
                 // Outras ações futuras podem ser tratadas aqui
                 console.log(`Ação \"${action}\" ainda não implementada`);
                 // Feedback visual temporário

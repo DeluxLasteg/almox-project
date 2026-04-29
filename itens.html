@@ -45,10 +45,20 @@
                 <h2>ITENS CADASTRADOS</h2>
                 <p class="page-subtitle" id="subtituloPaginaItens">Gerencie o catálogo de peças em uma tela dedicada.</p>
             </div>
-
             <div class="header-actions no-print">
-                <button class="btn-settings-header" type="button" data-settings-open aria-controls="modalConfiguracoes" aria-haspopup="dialog">CONFIG.</button>
-                <a class="btn-itens-header" id="btnVoltarOrigem" href="index.html">SAIDAS</a>
+                <div class="retractable-tab">
+                    <button class="btn-menu-toggle" type="button" id="btnMenuToggle" aria-label="Abrir menu" aria-expanded="false">
+                        <span class="menu-icon"></span>
+                    </button>
+                    <div class="retractable-content" id="retractableContent" hidden>
+                        <button type="button" class="btn-future-action" data-action="relatorios">RELATÓRIOS</button>
+                        <button type="button" class="btn-future-action" data-action="estoque">ESTOQUE</button>
+                        <button type="button" class="btn-future-action" data-action="fornecedores">FORNECEDORES</button>
+                        <button type="button" class="btn-future-action" data-action="usuarios">USUÁRIOS</button>
+                        <button type="button" class="btn-future-action" data-action="historico">HISTÓRICO</button>
+                        <button type="button" class="btn-future-action" data-action="configuracoes">CONFIGURAÇÕES</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -150,7 +160,7 @@
                     <section class="settings-card">
                         <div class="settings-card-head">
                             <h4>Aplicativo</h4>
-                            <p>Instale o Almoxarifado e mantenha o acesso rápido ao catálogo.</p>
+                            <p>Instale o Almox Project e mantenha o acesso rápido ao catálogo.</p>
                         </div>
 
                         <div class="settings-actions">
@@ -194,4 +204,5 @@
     <script src="theme.js"></script>
     <script src="items.js"></script>
 </body>
+    <script src="index.js"></script>
 </html>

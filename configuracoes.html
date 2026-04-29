@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações | Almox Project</title>
+    <link rel="stylesheet" href="style.CSS">
+    <link rel="stylesheet" href="theme.CSS">
+</head>
+<body>
+    <div class="header-container">
+        <div class="header-actions no-print">
+            <div class="retractable-tab">
+                <button class="btn-menu-toggle" type="button" id="btnMenuToggle" aria-label="Abrir menu" aria-expanded="false">
+                    <span class="menu-icon"></span>
+                </button>
+                <div class="retractable-content" id="retractableContent" hidden>
+                    <button type="button" class="btn-future-action" data-action="relatorios">RELATÓRIOS</button>
+                    <button type="button" class="btn-future-action" data-action="estoque">ESTOQUE</button>
+                    <button type="button" class="btn-future-action" data-action="fornecedores">FORNECEDORES</button>
+                    <button type="button" class="btn-future-action" data-action="usuarios">USUÁRIOS</button>
+                    <button type="button" class="btn-future-action" data-action="historico">HISTÓRICO</button>
+                    <button type="button" class="btn-future-action" data-action="configuracoes">CONFIGURAÇÕES</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <main class="settings-page">
+        <div class="settings-layout">
+            <div class="settings-hero">
+                <span class="modal-critical-badge">Central do app</span>
+                <h3 class="settings-title">Configurações</h3>
+                <p class="settings-subtitle">Ajuste o visual, acesse a instalação do app e dispare ações rápidas do almoxarifado em um único lugar.</p>
+            </div>
+            <div class="settings-grid">
+                <section class="settings-card">
+                    <div class="settings-card-head">
+                        <h4>Aparência</h4>
+                        <p>Defina como o sistema aparece para o time.</p>
+                    </div>
+                    <label class="settings-field" for="themeSelect">
+                        <span class="theme-label">Tema</span>
+                        <select id="themeSelect" class="theme-select" aria-label="Selecionar tema">
+                            <option value="default">Padrão</option>
+                            <option value="light">Claro</option>
+                        </select>
+                    </label>
+                </section>
+                <section class="settings-card">
+                    <div class="settings-card-head">
+                        <h4>Aplicativo</h4>
+                        <p>Use o Almox Project como app e mantenha o acesso rápido.</p>
+                    </div>
+                    <div class="settings-actions">
+                        <button class="btn-install" type="button" id="btnInstallApp" hidden>Instalar aplicativo</button>
+                    </div>
+                    <p class="settings-note">Se o navegador permitir, a instalação ficará disponível aqui automaticamente.</p>
+                </section>
+                <section class="settings-card settings-card-wide">
+                    <div class="settings-card-head">
+                        <h4>Ações rápidas</h4>
+                        <p>Atalhos para as tarefas mais usadas na tela principal.</p>
+                    </div>
+                    <div class="settings-actions">
+                        <button class="btn-print" type="button" onclick="window.print();">Imprimir tela</button>
+                        <button class="btn-export" type="button" onclick="exportarCSV();">Exportar CSV</button>
+                        <button class="btn-export" type="button" onclick="exportarTodosDados();">Exportar tudo</button>
+                        <button class="btn-import" type="button" onclick="importarDados();">Importar dados</button>
+                        <button class="btn-itens-header" type="button" onclick="abrirPaginaItens();">Abrir itens</button>
+                    </div>
+                </section>
+                <section class="settings-card settings-card-wide settings-card-danger">
+                    <div class="settings-card-head">
+                        <h4>Manutenção</h4>
+                        <p>Use esta área com cuidado para preservar o histórico de movimentações.</p>
+                    </div>
+                    <div class="settings-actions">
+                        <button class="btn-warning" type="button" onclick="restaurarBackupAutomatico();">Restaurar backup</button>
+                        <button class="btn-danger" type="button" onclick="limparTudo();">Limpar histórico</button>
+                    </div>
+                    <p class="settings-note">O catálogo de itens será mantido. Apenas o histórico de saídas será removido.</p>
+                </section>
+            </div>
+        </div>
+    </main>
+    <script src="app.js"></script>
+    <script src="theme.js"></script>
+    <script>
+        // Exemplo: mostrar botão de instalar app se suportado
+        if ('serviceWorker' in navigator && window.matchMedia('(display-mode: standalone)').matches === false) {
+            document.getElementById('btnInstallApp').hidden = false;
+        }
+        // Funções de ação rápida (implemente conforme necessário)
+        function exportarCSV() { alert('Exportar CSV'); }
+        function exportarTodosDados() { alert('Exportar tudo'); }
+        function importarDados() { alert('Importar dados'); }
+        function abrirPaginaItens() { window.location.href = 'itens.html'; }
+        function restaurarBackupAutomatico() { alert('Restaurar backup'); }
+        function limparTudo() { alert('Limpar histórico'); }
+    </script>
+</body>
+    <script src="index.js"></script>
+</html>
