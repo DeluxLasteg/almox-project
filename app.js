@@ -232,7 +232,7 @@ function registrarEventosDeInstalacao() {
         mostrarToast({
             variant: "success",
             title: "Aplicativo instalado",
-            message: "O Almoxarifado já pode ser aberto como app nesta máquina."
+            message: "O Almox Project já pode ser aberto como app nesta máquina."
         });
     });
 
@@ -310,7 +310,7 @@ function orientarDesinstalacaoDoAplicativo() {
     mostrarToast({
         variant: "info",
         title: "Desinstalar aplicativo",
-        message: "Abra o menu do app ou do navegador e escolha a opcao de desinstalar/remover o Almoxarifado.",
+        message: "Abra o menu do app ou do navegador e escolha a opcao de desinstalar/remover o Almox Project.",
         duration: 9000
     });
 }

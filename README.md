@@ -1,58 +1,166 @@
-# 📦 Sistema de Almoxarifado & Controle de Estoque
+# Almox Project
 
-> Um sistema web completo para gestão de almoxarifado e ponto de venda (PDV), desenvolvido do zero com foco em usabilidade, persistência de dados em nuvem e eficiência no controle de inventário.
+Almox Project e um sistema web local para controle de saidas de itens de almoxarifado por frota. O projeto funciona como uma aplicacao estatica em HTML, CSS e JavaScript, com persistencia no navegador por IndexedDB e suporte a instalacao como PWA.
 
-## 💻 Sobre o Projeto
+## Visao geral
 
-Este projeto nasceu do desejo de criar uma solução prática e funcional para o controle de mercadorias. O sistema permite o gerenciamento completo de um almoxarifado, oferecendo desde a entrada e saída de produtos até um dashboard interativo para visualização de métricas em tempo real.
+O sistema foi desenhado para registrar movimentacoes de saida, manter um catalogo de pecas e facilitar a consulta por frota, codigo, descricao, data ou numero de ordem de servico.
 
-Todo o desenvolvimento lógico e estrutural foi construído com o auxílio de Inteligência Artificial, servindo como uma excelente base de aplicação prática de conceitos de Full Stack, migrando de um armazenamento local para um banco de dados robusto na nuvem.
+Nao ha backend externo, login, servidor de banco de dados ou sincronizacao em nuvem. Os dados ficam no navegador do usuario, dentro do banco local `AlmoxarifadoDB`.
 
-## ✨ Funcionalidades Principais
+## Funcionalidades principais
 
-* **Gestão de Produtos:** Cadastro, edição, exclusão e visualização de itens no estoque.
-* **Controle de Movimentação:** Registro detalhado de entradas e saídas de mercadorias.
-* **Painel de Controle (Dashboard):** Visão geral rápida dos níveis de estoque e estatísticas importantes.
-* **Controle de Acesso:** Diferentes níveis de permissão para usuários do sistema.
-* **Integração em Nuvem:** Dados persistidos de forma segura e sincronizada entre diferentes dispositivos.
-* **Interface Responsiva e Intuitiva:** Layout desenhado para facilitar a operação diária no PDV.
+- Registro de saidas com frota, codigo da peca, quantidade, descricao e numero de OS opcional.
+- Catalogo de itens com cadastro, edicao, exclusao e busca por codigo ou descricao.
+- Preenchimento automatico da descricao quando o codigo existe no catalogo.
+- Aviso quando o codigo informado ainda nao existe no catalogo, com opcao de cadastrar ou seguir apenas naquela movimentacao.
+- Lista de saidas agrupada por frota, com visualizacao detalhada dos registros.
+- Busca geral nas saidas por frota, codigo, descricao, OS ou data.
+- Indicadores de registros, quantidade total e frotas ativas.
+- Edicao e exclusao de registros de saida.
+- Exportacao CSV das saidas filtradas.
+- Exportacao e importacao completa dos dados em JSON.
+- Backup automatico local e restauracao de backup.
+- Impressao da tela/relatorio de saidas.
+- Tema padrao e tema claro, persistidos no navegador.
+- Instalacao como PWA quando o navegador permitir.
+- Funcionamento offline apos o primeiro carregamento com service worker.
 
-## 🛠️ Tecnologias Utilizadas
+## Telas do sistema
 
-**Front-end:**
-* **HTML5:** Estruturação semântica de toda a aplicação.
-* **CSS3:** Estilização, layout e responsividade.
-* **JavaScript (Vanilla):** Lógica de interface, manipulação do DOM e regras de negócio.
+### Tela principal
 
-**Back-end & Banco de Dados:**
-* **Supabase:** Plataforma Backend-as-a-Service (BaaS) utilizada para armazenamento e gerenciamento do banco de dados na nuvem, garantindo segurança e persistência.
+Arquivo: `index.html`
 
-## 🚀 Como Executar o Projeto
+A tela principal concentra o fluxo operacional de saidas. Ela contem:
 
-Como a aplicação roda diretamente no navegador e consome serviços em nuvem, rodar o projeto localmente é bem simples:
+- cabecalho com menu retratil;
+- formulario de registro de saida;
+- area de indicadores;
+- busca de saidas;
+- cards agrupados por frota;
+- relatorio preparado para impressao;
+- modal de cadastro rapido de itens;
+- modal de confirmacao para acoes criticas;
+- modal de configuracoes.
 
-1. Clone este repositório para a sua máquina local:
-   ```bash
-   git clone https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git
-   cd NOME_DO_REPOSITORIO
-   ```
-2. Abra o arquivo `index.html` no navegador ou inicie um servidor local para uma experiência mais estável:
-   ```bash
-   python3 -m http.server 8000
-   ```
-3. Acesse a aplicação em:
-   ```text
-   http://localhost:8000
-   ```
-4. Configure as credenciais do Supabase no código front-end (`SUPABASE_URL` e `SUPABASE_ANON_KEY`) para conectar ao banco de dados na nuvem.
+No menu retratil, a opcao `ESTOQUE` abre a tela de itens. A opcao `CONFIGURACOES` abre a central de configuracoes. As demais opcoes ainda estao preparadas como atalhos futuros.
 
-## 📌 Observações
+### Tela de itens
 
-* Substitua `SEU_USUARIO` e `NOME_DO_REPOSITORIO` pelo caminho correto do seu repositório GitHub.
-* Garanta que seu projeto contenha os arquivos estáticos do front-end e a configuração do Supabase para que a aplicação funcione corretamente.
-* Caso utilize outra ferramenta de servidor local, como `serve` ou `live-server`, o procedimento também é válido.
+Arquivo: `itens.html`
 
-🧠 Desenvolvimento e Aprendizado
-Este repositório marca um passo importante na minha jornada como desenvolvedor. Utilizar IA como ferramenta de suporte na engenharia de prompts me permitiu acelerar o aprendizado, entender lógicas complexas de JavaScript e realizar a integração de uma interface web com um banco de dados real na nuvem.
+A tela de itens e dedicada ao catalogo de pecas. Ela contem:
 
-## Desenvolvido por Alan Freitas (Delux Lasteg).
+- formulario para cadastrar ou atualizar item;
+- busca no catalogo;
+- lista de itens cadastrados;
+- acoes de editar e excluir;
+- importacao de dados;
+- modal de configuracoes;
+- fluxo de retorno para a tela principal.
+
+Quando a tela e aberta a partir de um codigo nao cadastrado na tela principal, o sistema leva junto o contexto do codigo e pode retornar para a saida original depois do cadastro.
+
+## Persistencia de dados
+
+Os dados sao armazenados no IndexedDB do navegador.
+
+Banco:
+
+```text
+AlmoxarifadoDB
+```
+
+Stores:
+
+```text
+saidas
+itens_cadastro
+```
+
+Tambem sao usados:
+
+- `localStorage` para tema e estado de instalacao do app;
+- `sessionStorage` para rascunho temporario de saida e contexto de navegacao entre telas;
+- Cache Storage pelo service worker para recursos offline.
+
+Importante: limpar os dados do site no navegador pode apagar os registros locais. Antes de trocar de maquina, limpar o navegador ou reinstalar o app, exporte um backup em JSON.
+
+## PWA e modo offline
+
+O projeto possui:
+
+- `manifest.webmanifest` com nome, icone, escopo e modo `standalone`;
+- `service-worker.js` para cache dos arquivos principais;
+- botoes de instalar e desinstalar no modal de configuracoes.
+
+O botao `Instalar aplicativo` aparece quando o navegador disponibiliza o evento de instalacao. O botao `Desinstalar aplicativo` aparece quando o sistema detecta que o app esta instalado ou em modo standalone.
+
+Por limitacao dos navegadores, a desinstalacao de uma PWA nao pode ser executada diretamente por JavaScript. Por isso, o botao de desinstalar orienta o usuario a remover o app pelo menu do navegador ou do proprio aplicativo instalado.
+
+## Estrutura dos arquivos
+
+```text
+index.html              Tela principal de saidas
+itens.html              Tela dedicada ao catalogo
+style.CSS               Estilos principais
+theme.CSS               Ajustes do tema claro
+theme.js                Controle e persistencia do tema
+app.js                  Logica compartilhada: configuracoes, PWA, toasts e service worker
+index.js                Logica da tela principal, saidas, catalogo rapido e exportacoes
+items.js                Logica da tela de itens, catalogo, importacao e backup
+manifest.webmanifest    Configuracao da PWA
+service-worker.js       Cache offline da aplicacao
+icons/                  Icones do aplicativo
+```
+
+## Como executar
+
+O projeto nao exige instalacao de dependencias.
+
+Opcao simples:
+
+```text
+Abra o arquivo index.html no navegador.
+```
+
+Opcao recomendada para testar PWA e service worker:
+
+```bash
+python -m http.server 8000
+```
+
+Depois acesse:
+
+```text
+http://localhost:8000
+```
+
+Em alguns sistemas o comando pode ser:
+
+```bash
+python3 -m http.server 8000
+```
+
+## Exportacao e importacao
+
+O sistema oferece dois formatos principais:
+
+- CSV: exporta as saidas filtradas para planilha.
+- JSON: exporta ou importa todos os dados do sistema, incluindo saidas e catalogo.
+
+Use o JSON como backup principal, pois ele preserva toda a base local do sistema.
+
+## Observacoes tecnicas
+
+- O sistema usa JavaScript puro, sem framework.
+- O banco local foi mantido como `AlmoxarifadoDB` para preservar compatibilidade com dados ja salvos.
+- A tela principal e a tela de itens compartilham o mesmo banco local.
+- O service worker usa uma estrategia de rede primeiro e cache como fallback.
+- O tema selecionado e salvo em `localStorage` com a chave `almox_theme`.
+- O app deve ser acessado por `localhost` ou contexto seguro para que a instalacao PWA funcione corretamente.
+
+## Desenvolvido por
+
+Alan Freitas (Delux Lasteg)

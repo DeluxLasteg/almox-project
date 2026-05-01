@@ -772,14 +772,14 @@ async function exportarTodosDados() {
             itens,
             versao: "1.0",
             dataExportacao: new Date().toISOString(),
-            aplicacao: "Almoxarifado"
+            aplicacao: "Almox Project"
         };
 
         const json = JSON.stringify(dadosExportacao, null, 2);
         const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `Almoxarifado_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        link.download = `Almox_Project_Backup_${new Date().toISOString().slice(0, 10)}.json`;
         link.click();
         URL.revokeObjectURL(link.href);
 

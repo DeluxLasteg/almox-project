@@ -1,6 +1,6 @@
 {
-    "name": "Almoxarifado",
-    "short_name": "Almox",
+    "name": "Almox Project",
+    "short_name": "Almox Project",
     "description": "Sistema de almoxarifado com cadastro de saídas e catálogo de itens, instalável e disponível offline.",
     "lang": "pt-BR",
     "start_url": "./index.html",
