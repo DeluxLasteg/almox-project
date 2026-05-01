@@ -153,12 +153,14 @@ function inicializarModalConfiguracoes() {
 
     definirEstadoDoModal(modal, false);
 
-    document.querySelectorAll(SETTINGS_OPEN_SELECTOR).forEach((botao) => {
-        botao.addEventListener("click", (event) => {
+    // Adiciona evento ao botão do menu lateral (data-action="configuracoes")
+    const botaoMenuConfiguracoes = document.querySelector('.retractable-content [data-action="configuracoes"]');
+    if (botaoMenuConfiguracoes) {
+        botaoMenuConfiguracoes.addEventListener("click", (event) => {
             event.preventDefault();
             abrirModalConfiguracoes();
         });
-    });
+    }
 
     modal.querySelectorAll(SETTINGS_CLOSE_SELECTOR).forEach((botao) => {
         botao.addEventListener("click", () => {
