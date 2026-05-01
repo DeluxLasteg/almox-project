@@ -10,10 +10,10 @@ const APP_SHELL_FILES = [
     "./index.js",
     "./items.js",
     "./manifest.webmanifest",
-    "./icons/app-icon.svg",
-    "./icons/app-icon-maskable.svg",
-    "./icons/app-icon-192.png",
-    "./icons/app-icon-512.png"
+    "./icons/teste.png",
+    "./icons/teste.png",
+    "./icons/teste.png",
+    "./icons/teste.png"
 ];
 
 self.addEventListener("install", (event) => {

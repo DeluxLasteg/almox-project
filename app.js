@@ -1,5 +1,7 @@
 const APP_THEME_META_COLOR = document.querySelector('meta[name="theme-color"]');
 const INSTALL_BUTTON_SELECTOR = "[data-install-button]";
+const UNINSTALL_BUTTON_SELECTOR = "[data-uninstall-button]";
+const APP_INSTALLED_STORAGE_KEY = "almoxAppInstalled";
 const TOAST_REGION_ID = "toastRegion";
 const TOAST_DEFAULT_DURATION = 4200;
 const SETTINGS_MODAL_ID = "modalConfiguracoes";
@@ -199,17 +201,34 @@ function observarMudancasDeTema() {
 }
 
 function registrarEventosDeInstalacao() {
-    atualizarVisibilidadeDoBotaoInstalar(false);
+    atualizarBotoesDeInstalacao();
+
+    const mediaStandalone = window.matchMedia("(display-mode: standalone)");
+    const atualizarPeloModoDeExibicao = () => {
+        if (aplicativoEmModoInstalado()) {
+            registrarAplicativoComoInstalado();
+        }
+
+        atualizarBotoesDeInstalacao();
+    };
+
+    if (typeof mediaStandalone.addEventListener === "function") {
+        mediaStandalone.addEventListener("change", atualizarPeloModoDeExibicao);
+    } else if (typeof mediaStandalone.addListener === "function") {
+        mediaStandalone.addListener(atualizarPeloModoDeExibicao);
+    }
 
     window.addEventListener("beforeinstallprompt", (event) => {
         // Não chamamos preventDefault() para permitir que o navegador mostre o banner nativo
         deferredInstallPrompt = event;
-        atualizarVisibilidadeDoBotaoInstalar(true);
+        removerMarcaDeAplicativoInstalado();
+        atualizarBotoesDeInstalacao();
     });
 
     window.addEventListener("appinstalled", () => {
         deferredInstallPrompt = null;
-        atualizarVisibilidadeDoBotaoInstalar(false);
+        registrarAplicativoComoInstalado();
+        atualizarBotoesDeInstalacao();
         mostrarToast({
             variant: "success",
             title: "Aplicativo instalado",
@@ -228,19 +247,71 @@ function registrarEventosDeInstalacao() {
                 await deferredInstallPrompt.userChoice;
             } finally {
                 deferredInstallPrompt = null;
-                atualizarVisibilidadeDoBotaoInstalar(false);
+                atualizarBotoesDeInstalacao();
             }
         });
     });
 
-    if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) {
-        atualizarVisibilidadeDoBotaoInstalar(false);
+    document.querySelectorAll(UNINSTALL_BUTTON_SELECTOR).forEach((botao) => {
+        botao.addEventListener("click", orientarDesinstalacaoDoAplicativo);
+    });
+
+    atualizarPeloModoDeExibicao();
+}
+
+function aplicativoEmModoInstalado() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+}
+
+function aplicativoMarcadoComoInstalado() {
+    try {
+        return window.localStorage.getItem(APP_INSTALLED_STORAGE_KEY) === "true";
+    } catch (error) {
+        return false;
+    }
+}
+
+function registrarAplicativoComoInstalado() {
+    try {
+        window.localStorage.setItem(APP_INSTALLED_STORAGE_KEY, "true");
+    } catch (error) {
+        // O botao ainda funciona em modo instalado mesmo sem armazenamento local.
+    }
+}
+
+function removerMarcaDeAplicativoInstalado() {
+    try {
+        window.localStorage.removeItem(APP_INSTALLED_STORAGE_KEY);
+    } catch (error) {
+        // Sem armazenamento local, o estado volta a ser inferido pelo navegador.
     }
 }
 
 function atualizarVisibilidadeDoBotaoInstalar(visivel) {
     document.querySelectorAll(INSTALL_BUTTON_SELECTOR).forEach((botao) => {
         botao.hidden = !visivel;
+    });
+}
+
+function atualizarVisibilidadeDoBotaoDesinstalar(visivel) {
+    document.querySelectorAll(UNINSTALL_BUTTON_SELECTOR).forEach((botao) => {
+        botao.hidden = !visivel;
+    });
+}
+
+function atualizarBotoesDeInstalacao() {
+    const instalado = aplicativoEmModoInstalado() || aplicativoMarcadoComoInstalado();
+    atualizarVisibilidadeDoBotaoInstalar(Boolean(deferredInstallPrompt) && !instalado);
+    atualizarVisibilidadeDoBotaoDesinstalar(instalado);
+}
+
+function orientarDesinstalacaoDoAplicativo() {
+    fecharModalConfiguracoes({ restaurarFoco: false });
+    mostrarToast({
+        variant: "info",
+        title: "Desinstalar aplicativo",
+        message: "Abra o menu do app ou do navegador e escolha a opcao de desinstalar/remover o Almoxarifado.",
+        duration: 9000
     });
 }
 
