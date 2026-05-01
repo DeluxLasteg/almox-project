@@ -79,43 +79,6 @@ function inicializarEventos() {
 
     ativarComportamentoCampoOrdemServico();
 
-    // Evento da aba retrátil
-    const btnMenuToggle = document.getElementById("btnMenuToggle");
-    const retractableContent = document.getElementById("retractableContent");
-    
-    if (btnMenuToggle && retractableContent) {
-        btnMenuToggle.addEventListener("click", (event) => {
-            event.stopPropagation();
-            const expanded = btnMenuToggle.getAttribute("aria-expanded") === "true";
-            btnMenuToggle.setAttribute("aria-expanded", !expanded);
-            retractableContent.hidden = expanded;
-        });
-
-        // Fechar ao clicar fora
-        document.addEventListener("click", (event) => {
-            if (!event.target.closest(".retractable-tab")) {
-                btnMenuToggle.setAttribute("aria-expanded", "false");
-                retractableContent.hidden = true;
-            }
-        });
-
-        // Botões futuros
-        document.querySelectorAll(".btn-future-action").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                const action = btn.dataset.action;
-                if (action === "estoque") {
-                    window.location.href = "itens.html";
-                    return;
-                }
-                // Outras ações futuras podem ser tratadas aqui
-                console.log(`Ação \"${action}\" ainda não implementada`);
-                // Feedback visual temporário
-                btnMenuToggle.setAttribute("aria-expanded", "false");
-                retractableContent.hidden = true;
-            });
-        });
-    }
-
     const atualizarSaidasComDebounce = criarDebounce(() => {
         atualizarInterfaceSaidas();
     }, 120);

@@ -41,15 +41,31 @@
 </head>
 <body>
     <div class="container">
-        <div class="header-container">
+        <div class="header-container header-container-menu">
             <div class="page-title-group">
                 <a class="page-link no-print" id="linkVoltarSaidas" href="index.html">Voltar para saídas</a>
                 <h2>ITENS CADASTRADOS</h2>
                 <p class="page-subtitle" id="subtituloPaginaItens">Gerencie o catálogo de peças em uma tela dedicada.</p>
+                <div class="page-title-actions no-print">
+                    <a class="btn-itens-header" id="btnVoltarOrigem" href="index.html">SAIDAS</a>
+                </div>
             </div>
 
-            <div class="header-actions no-print">
-                <a class="btn-itens-header" id="btnVoltarOrigem" href="index.html">SAIDAS</a>
+            <div class="header-actions header-actions-menu no-print">
+                <div class="retractable-tab">
+                    <button class="btn-menu-toggle" type="button" id="btnMenuToggle" aria-label="Abrir menu" aria-expanded="false">
+                        <span class="menu-icon"></span>
+                    </button>
+                    <div class="retractable-content" id="retractableContent" hidden>
+                        <button type="button" class="btn-future-action" data-action="saidas">SAÍDAS</button>
+                        <button type="button" class="btn-future-action" data-action="relatorios">RELATÓRIOS</button>
+                        <button type="button" class="btn-future-action" data-action="estoque">ESTOQUE</button>
+                        <button type="button" class="btn-future-action" data-action="fornecedores">FORNECEDORES</button>
+                        <button type="button" class="btn-future-action" data-action="usuarios">USUÁRIOS</button>
+                        <button type="button" class="btn-future-action" data-action="historico">HISTÓRICO</button>
+                        <button type="button" class="btn-future-action" data-action="configuracoes">CONFIGURAÇÕES</button>
+                    </div>
+                </div>
             </div>
         </div>
 

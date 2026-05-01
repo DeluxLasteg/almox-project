@@ -18,6 +18,7 @@ inicializarAplicacaoBase();
 
 function inicializarAplicacaoBase() {
     criarRegiaoDeToasts();
+    inicializarMenuAcesso();
     inicializarModalConfiguracoes();
     atualizarCorDoTemaNoChrome();
     observarMudancasDeTema();
@@ -147,6 +148,66 @@ function tratarTecladoModalConfiguracoes(event) {
     }
 }
 
+function paginaAtualEh(arquivo) {
+    const paginaAtual = window.location.pathname.split("/").pop().toLowerCase() || "index.html";
+    return paginaAtual === arquivo.toLowerCase();
+}
+
+function fecharMenuAcesso(btnMenuToggle, retractableContent) {
+    btnMenuToggle.setAttribute("aria-expanded", "false");
+    retractableContent.hidden = true;
+}
+
+function inicializarMenuAcesso() {
+    const btnMenuToggle = document.getElementById("btnMenuToggle");
+    const retractableContent = document.getElementById("retractableContent");
+
+    if (!btnMenuToggle || !retractableContent) {
+        return;
+    }
+
+    btnMenuToggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const expanded = btnMenuToggle.getAttribute("aria-expanded") === "true";
+        btnMenuToggle.setAttribute("aria-expanded", !expanded);
+        retractableContent.hidden = expanded;
+    });
+
+    document.addEventListener("click", (event) => {
+        if (!event.target.closest(".retractable-tab")) {
+            fecharMenuAcesso(btnMenuToggle, retractableContent);
+        }
+    });
+
+    document.querySelectorAll(".btn-future-action").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const action = btn.dataset.action;
+            fecharMenuAcesso(btnMenuToggle, retractableContent);
+
+            if (action === "saidas") {
+                if (!paginaAtualEh("index.html")) {
+                    window.location.href = "index.html";
+                }
+                return;
+            }
+
+            if (action === "estoque") {
+                if (!paginaAtualEh("itens.html")) {
+                    window.location.href = "itens.html";
+                }
+                return;
+            }
+
+            if (action === "configuracoes") {
+                abrirModalConfiguracoes();
+                return;
+            }
+
+            console.log(`Ação "${action}" ainda não implementada`);
+        });
+    });
+}
+
 function inicializarModalConfiguracoes() {
     const modal = obterModalConfiguracoes();
     if (!(modal instanceof HTMLElement)) {
@@ -154,15 +215,6 @@ function inicializarModalConfiguracoes() {
     }
 
     definirEstadoDoModal(modal, false);
-
-    // Adiciona evento ao botão do menu lateral (data-action="configuracoes")
-    const botaoMenuConfiguracoes = document.querySelector('.retractable-content [data-action="configuracoes"]');
-    if (botaoMenuConfiguracoes) {
-        botaoMenuConfiguracoes.addEventListener("click", (event) => {
-            event.preventDefault();
-            abrirModalConfiguracoes();
-        });
-    }
 
     modal.querySelectorAll(SETTINGS_CLOSE_SELECTOR).forEach((botao) => {
         botao.addEventListener("click", () => {
