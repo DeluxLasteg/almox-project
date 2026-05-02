@@ -18,7 +18,6 @@ const listaItensCadastrados = document.getElementById("listaItensCadastrados");
 const contadorItensCatalogo = document.getElementById("contadorItensCatalogo");
 const btnSalvarItem = document.getElementById("btnSalvarItem");
 const btnCancelarEdicaoItem = document.getElementById("btnCancelarEdicaoItem");
-const btnVoltarOrigem = document.getElementById("btnVoltarOrigem");
 const linkVoltarSaidas = document.getElementById("linkVoltarSaidas");
 const subtituloPaginaItens = document.getElementById("subtituloPaginaItens");
 const mensagemPaginaItens = document.getElementById("mensagemPaginaItens");
@@ -56,7 +55,6 @@ function configurarNavegacaoOrigem() {
         : "index.html";
 
     linkVoltarSaidas.href = destino;
-    btnVoltarOrigem.href = destino;
 
     if (contextoPagina?.cadastroRapido && contextoPagina.codigo) {
         subtituloPaginaItens.textContent = `Cadastro rápido para o código ${contextoPagina.codigo}. Salve o item para voltar ao almoxarifado.`;
