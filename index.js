@@ -175,7 +175,7 @@ function ativarComportamentoCampoOrdemServico() {
 function inicializarBanco() {
     const request = indexedDB.open(DB_NAME, 4);
 
-    request.onupgradeneeded = async (event) => {
+    request.onupgradeneeded = (event) => {
         const database = event.target.result;
         const oldVersion = event.oldVersion;
 
@@ -214,6 +214,9 @@ function inicializarBanco() {
             if (!storeItens.indexNames.contains("descricao")) {
                 storeItens.createIndex("descricao", "descricao", { unique: false });
             }
+            if (!storeItens.indexNames.contains("quantidade")) {
+                storeItens.createIndex("quantidade", "quantidade", { unique: false });
+            }
             if (!storeItens.indexNames.contains("atualizadoEm")) {
                 storeItens.createIndex("atualizadoEm", "atualizadoEm", { unique: false });
             }
@@ -221,7 +224,7 @@ function inicializarBanco() {
 
         // Migração de dados antigos do localStorage (se existir)
         if (oldVersion < 4) {
-            await migrarDadosAntigos(database);
+            migrarDadosAntigos(event.target.transaction);
         }
     };
 
@@ -251,7 +254,18 @@ function inicializarBanco() {
             detalhe: "Recarregue a página. Se o problema continuar, verifique as permissões de armazenamento do navegador."
         });
     };
+
+    request.onblocked = () => {
+        mostrarAvisoCritico({
+            variant: "danger",
+            badge: "Falha crítica",
+            titulo: "Banco de dados bloqueado",
+            mensagem: "Outra aba ou janela está usando a base de dados e impede a atualização.",
+            detalhe: "Feche outras abas do aplicativo e recarregue para continuar."
+        });
+    };
 }
+
 
 function executarTransacao(storeName, mode) {
     if (!db) {
@@ -261,9 +275,12 @@ function executarTransacao(storeName, mode) {
     return db.transaction(storeName, mode).objectStore(storeName);
 }
 
-async function migrarDadosAntigos(database) {
+function migrarDadosAntigos(transaction) {
     try {
-        // Verificar se há dados antigos no localStorage
+        if (!transaction) {
+            return;
+        }
+
         const dadosAntigosSaidas = localStorage.getItem("almox_saidas");
         const dadosAntigosItens = localStorage.getItem("almox_itens_cadastro");
 
@@ -273,7 +290,6 @@ async function migrarDadosAntigos(database) {
 
         console.log("Migrando dados antigos do localStorage para IndexedDB...");
 
-        const transaction = database.transaction([STORE_SAIDAS, STORE_ITENS], "readwrite");
         const storeSaidas = transaction.objectStore(STORE_SAIDAS);
         const storeItens = transaction.objectStore(STORE_ITENS);
 
@@ -282,7 +298,6 @@ async function migrarDadosAntigos(database) {
             const saidasAntigas = JSON.parse(dadosAntigosSaidas);
             if (Array.isArray(saidasAntigas)) {
                 for (const saida of saidasAntigas) {
-                    // Adicionar timestamps se não existirem
                     if (!saida.criadoEm) {
                         saida.criadoEm = new Date().toISOString();
                     }
@@ -299,7 +314,6 @@ async function migrarDadosAntigos(database) {
             const itensAntigos = JSON.parse(dadosAntigosItens);
             if (Array.isArray(itensAntigos)) {
                 for (const item of itensAntigos) {
-                    // Adicionar timestamps se não existirem
                     if (!item.criadoEm) {
                         item.criadoEm = new Date().toISOString();
                     }
@@ -311,23 +325,25 @@ async function migrarDadosAntigos(database) {
             }
         }
 
-        // Aguardar transação completar
-        await new Promise((resolve, reject) => {
-            transaction.oncomplete = resolve;
-            transaction.onerror = reject;
-        });
+        transaction.oncomplete = () => {
+            if (dadosAntigosSaidas) localStorage.removeItem("almox_saidas");
+            if (dadosAntigosItens) localStorage.removeItem("almox_itens_cadastro");
+            console.log("Migração concluída com sucesso");
+            window.mostrarToast?.({
+                variant: "info",
+                title: "Migração concluída",
+                message: "Dados antigos foram migrados para o novo sistema de armazenamento."
+            });
+        };
 
-        // Limpar localStorage após migração bem-sucedida
-        if (dadosAntigosSaidas) localStorage.removeItem("almox_saidas");
-        if (dadosAntigosItens) localStorage.removeItem("almox_itens_cadastro");
-
-        console.log("Migração concluída com sucesso");
-        window.mostrarToast?.({
-            variant: "info",
-            title: "Migração concluída",
-            message: "Dados antigos foram migrados para o novo sistema de armazenamento."
-        });
-
+        transaction.onerror = (event) => {
+            console.error("Erro durante migração:", event.target.error);
+            window.mostrarToast?.({
+                variant: "warning",
+                title: "Migração com erro",
+                message: "Houve um problema ao migrar dados antigos. Os dados podem ter sido perdidos."
+            });
+        };
     } catch (error) {
         console.error("Erro durante migração:", error);
         window.mostrarToast?.({
@@ -2282,10 +2298,12 @@ function resetarFormulario(manterFrota = false) {
 
     if (manterFrota) {
         inputFrota.value = frotaAtual;
+        inputQuantidade.value = "1";
         inputCodigo.focus();
         return;
     }
 
+    inputQuantidade.value = "1";
     inputFrota.focus();
 }
 

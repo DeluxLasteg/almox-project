@@ -164,6 +164,9 @@ function inicializarBanco() {
             if (!storeItens.indexNames.contains("descricao")) {
                 storeItens.createIndex("descricao", "descricao", { unique: false });
             }
+            if (!storeItens.indexNames.contains("quantidade")) {
+                storeItens.createIndex("quantidade", "quantidade", { unique: false });
+            }
             if (!storeItens.indexNames.contains("atualizadoEm")) {
                 storeItens.createIndex("atualizadoEm", "atualizadoEm", { unique: false });
             }
@@ -188,6 +191,16 @@ function inicializarBanco() {
             titulo: "Banco de dados indisponível",
             mensagem: "Não foi possível abrir o banco de dados do navegador.",
             detalhe: "Recarregue a página. Se o problema continuar, verifique as permissões de armazenamento do navegador."
+        });
+    };
+
+    request.onblocked = () => {
+        mostrarAvisoCritico({
+            variant: "danger",
+            badge: "Falha crítica",
+            titulo: "Banco de dados bloqueado",
+            mensagem: "Outra aba ou janela está usando a base de dados e impede a atualização.",
+            detalhe: "Feche outras abas do aplicativo e recarregue para continuar."
         });
     };
 }
