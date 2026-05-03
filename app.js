@@ -39,27 +39,6 @@ function atualizarClasseGlobalDeModais() {
     document.body.classList.toggle("has-modal-open", Boolean(document.querySelector(".modal.is-open")));
 }
 
-function definirEstadoDoModal(modal, aberto) {
-    if (!(modal instanceof HTMLElement)) {
-        return;
-    }
-
-    modal.style.display = aberto ? "flex" : "none";
-    modal.classList.toggle("is-open", aberto);
-    modal.setAttribute("aria-hidden", aberto ? "false" : "true");
-    atualizarClasseGlobalDeModais();
-}
-
-function obterElementosFocaveis(modal) {
-    if (!(modal instanceof HTMLElement)) {
-        return [];
-    }
-
-    return Array.from(
-        modal.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
-    ).filter((elemento) => !elemento.disabled && elemento.offsetParent !== null);
-}
-
 function manterFocoNoModalBase(event, modal) {
     const elementosFocaveis = obterElementosFocaveis(modal);
 
@@ -110,7 +89,7 @@ function abrirModalConfiguracoes() {
         ultimoElementoFocadoConfiguracoes = activeElement;
     }
 
-    definirEstadoDoModal(modal, true);
+    definirEstadoModal(modal, true);
     focarPrimeiroControleDeConfiguracoes(modal);
 }
 
@@ -120,7 +99,7 @@ function fecharModalConfiguracoes({ restaurarFoco = true } = {}) {
         return;
     }
 
-    definirEstadoDoModal(modal, false);
+    definirEstadoModal(modal, false);
 
     if (restaurarFoco && ultimoElementoFocadoConfiguracoes instanceof HTMLElement && document.body.contains(ultimoElementoFocadoConfiguracoes)) {
         ultimoElementoFocadoConfiguracoes.focus();
@@ -214,7 +193,7 @@ function inicializarModalConfiguracoes() {
         return;
     }
 
-    definirEstadoDoModal(modal, false);
+    definirEstadoModal(modal, false);
 
     modal.querySelectorAll(SETTINGS_CLOSE_SELECTOR).forEach((botao) => {
         botao.addEventListener("click", () => {

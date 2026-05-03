@@ -469,42 +469,6 @@ async function restaurarBackupAutomatico() {
     }
 }
 
-function normalizarBusca(value) {
-    return (value || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toUpperCase()
-        .trim();
-}
-
-function formatarContagem(valor, singular, plural = `${singular}s`) {
-    return `${valor} ${valor === 1 ? singular : plural}`;
-}
-
-function criarDebounce(callback, wait = 120) {
-    let timeoutId = null;
-
-    return (...args) => {
-        if (timeoutId !== null) {
-            window.clearTimeout(timeoutId);
-        }
-
-        timeoutId = window.setTimeout(() => {
-            timeoutId = null;
-            callback(...args);
-        }, wait);
-    };
-}
-
-function escapeHtml(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
 function definirSugestoesVisiveis(visivel) {
     boxSugestao.hidden = !visivel;
 }
@@ -759,16 +723,6 @@ function restaurarFocoAnterior(fallback = inputCodigo) {
 
     ultimoElementoFocado = null;
     alvo.focus();
-}
-
-function definirEstadoModal(modal, aberto) {
-    if (!(modal instanceof HTMLElement)) {
-        return;
-    }
-
-    modal.style.display = aberto ? "flex" : "none";
-    modal.classList.toggle("is-open", aberto);
-    modal.setAttribute("aria-hidden", aberto ? "false" : "true");
 }
 
 function atualizarEstadoModal() {
