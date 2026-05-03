@@ -1658,6 +1658,8 @@ formSaida.addEventListener("submit", (event) => {
     putRequest.onsuccess = async () => {
         resetarFormulario(true);
         await carregarDados();
+        // Notificar outras abas sobre atualização de saídas
+        localStorage.setItem('almox_saidas_updated', Date.now().toString());
         window.mostrarToast?.({
             variant: "success",
             title: id ? "Saída atualizada" : "Saída registrada",
@@ -2273,6 +2275,8 @@ async function deletarItem(id) {
         }
 
         await carregarDados();
+        // Notificar outras abas sobre atualização de saídas
+        localStorage.setItem('almox_saidas_updated', Date.now().toString());
         window.mostrarToast?.({
             variant: "success",
             title: "Saída removida",
@@ -2492,6 +2496,9 @@ async function importarDados() {
             // Recarregar dados
             await carregarCatalogo();
             await carregarDados();
+
+            // Notificar outras abas sobre atualização de saídas
+            localStorage.setItem('almox_saidas_updated', Date.now().toString());
 
             window.mostrarToast?.({
                 variant: "success",

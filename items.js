@@ -182,6 +182,13 @@ function inicializarBanco() {
         db = event.target.result;
         await carregarCatalogo();
 
+        // Listener para atualizações de saídas de outras abas
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'almox_saidas_updated') {
+                carregarCatalogo();
+            }
+        });
+
         if (aplicarContextoInicial()) {
             return;
         }
@@ -449,6 +456,48 @@ function carregarSaidas() {
     });
 }
 
+async function calcularSaldoReal(codigo) {
+    try {
+        const saidas = await carregarSaidas();
+        const saldoInicial = catalogoItens.find(item => item.codigo === codigo)?.saldo || 0;
+        const totalSaidas = saidas
+            .filter(saida => saida.codigo === codigo)
+            .reduce((total, saida) => total + (saida.qtd || 0), 0);
+        return Math.max(0, saldoInicial - totalSaidas);
+    } catch (error) {
+        console.error("Erro ao calcular saldo real:", error);
+        return 0;
+    }
+}
+
+async function calcularSaldosReais(itens) {
+    try {
+        const saidas = await carregarSaidas();
+        const saldosPorCodigo = {};
+
+        // Calcular total de saídas por código
+        saidas.forEach(saida => {
+            if (!saldosPorCodigo[saida.codigo]) {
+                saldosPorCodigo[saida.codigo] = 0;
+            }
+            saldosPorCodigo[saida.codigo] += saida.qtd || 0;
+        });
+
+        // Calcular saldo real para cada item
+        return itens.map(item => {
+            const saldoInicial = item.saldo || 0;
+            const totalSaidas = saldosPorCodigo[item.codigo] || 0;
+            return {
+                ...item,
+                saldoReal: Math.max(0, saldoInicial - totalSaidas)
+            };
+        });
+    } catch (error) {
+        console.error("Erro ao calcular saldos reais:", error);
+        return itens.map(item => ({ ...item, saldoReal: item.saldo || 0 }));
+    }
+}
+
 function filtrarCatalogo() {
     const termo = normalizarBusca(inputBuscaItemCatalogo.value);
 
@@ -625,48 +674,54 @@ function renderizarListaItens() {
         return;
     }
 
-    const fragment = document.createDocumentFragment();
+    // Calcular saldos reais e renderizar
+    calcularSaldosReais(itensFiltrados).then(itensComSaldo => {
+        const fragment = document.createDocumentFragment();
 
-    itensFiltrados.forEach((item) => {
-        const linha = document.createElement("div");
-        linha.className = "item-cadastrado";
+        itensComSaldo.forEach((item) => {
+            const linha = document.createElement("div");
+            linha.className = "item-cadastrado";
 
-        const info = document.createElement("div");
-        info.className = "item-info";
-        info.innerHTML = `
-            <strong>${escapeHtml(item.codigo)}</strong>
-            <span>${escapeHtml(item.descricao)}</span>
-            <small>Localização: ${escapeHtml(item.localizacao || "N/A")} | Saldo: ${item.saldo || 0}</small>
-        `;
+            const info = document.createElement("div");
+            info.className = "item-info";
+            info.innerHTML = `
+                <strong>${escapeHtml(item.codigo)}</strong>
+                <span>${escapeHtml(item.descricao)}</span>
+                <small>Local: ${escapeHtml(item.localizacao || "N/A")} | Saldo: ${item.saldoReal}</small>
+            `;
 
-        const actions = document.createElement("div");
-        actions.className = "item-actions";
+            const actions = document.createElement("div");
+            actions.className = "item-actions";
 
-        const btnEditar = document.createElement("button");
-        btnEditar.type = "button";
-        btnEditar.className = "btn-icon";
-        btnEditar.textContent = "Editar";
-        btnEditar.addEventListener("click", () => {
-            prepararEdicaoItemCatalogo(item.codigo);
-            definirMensagem(`Editando o item ${item.codigo}.`, "warning");
+            const btnEditar = document.createElement("button");
+            btnEditar.type = "button";
+            btnEditar.className = "btn-icon";
+            btnEditar.textContent = "Editar";
+            btnEditar.addEventListener("click", () => {
+                prepararEdicaoItemCatalogo(item.codigo);
+                definirMensagem(`Editando o item ${item.codigo}.`, "warning");
+            });
+
+            const btnExcluir = document.createElement("button");
+            btnExcluir.type = "button";
+            btnExcluir.className = "btn-icon";
+            btnExcluir.textContent = "Excluir";
+            btnExcluir.addEventListener("click", () => {
+                deletarItemCatalogo(item.codigo);
+            });
+
+            actions.appendChild(btnEditar);
+            actions.appendChild(btnExcluir);
+            linha.appendChild(info);
+            linha.appendChild(actions);
+            fragment.appendChild(linha);
         });
 
-        const btnExcluir = document.createElement("button");
-        btnExcluir.type = "button";
-        btnExcluir.className = "btn-icon";
-        btnExcluir.textContent = "Excluir";
-        btnExcluir.addEventListener("click", () => {
-            deletarItemCatalogo(item.codigo);
-        });
-
-        actions.appendChild(btnEditar);
-        actions.appendChild(btnExcluir);
-        linha.appendChild(info);
-        linha.appendChild(actions);
-        fragment.appendChild(linha);
+        listaItensCadastrados.appendChild(fragment);
+    }).catch(error => {
+        console.error("Erro ao renderizar lista de itens:", error);
+        listaItensCadastrados.innerHTML = '<div class="scrollable-empty">Erro ao carregar itens.</div>';
     });
-
-    listaItensCadastrados.appendChild(fragment);
 }
 
 async function deletarItemCatalogo(codigo) {
