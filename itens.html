@@ -79,13 +79,38 @@
                     <input type="hidden" id="cadCodigoOriginal" value="">
 
                     <div class="input-box input-box-spaced-sm">
-                        <label for="cadCodigo">Código da peça</label>
+                        <label for="cadCodigo">Código interno do material</label>
                         <input type="text" id="cadCodigo" required autocomplete="off">
                     </div>
 
+                    <div class="input-box input-box-spaced-sm">
+                        <label for="cadCodigoOriginalMaterial">Código original do material</label>
+                        <input type="text" id="cadCodigoOriginalMaterial" autocomplete="off">
+                    </div>
+
                     <div class="input-box">
-                        <label for="cadDescricao">Descrição do item</label>
+                        <label for="cadDescricao">Descrição do material</label>
                         <input type="text" id="cadDescricao" oninput="this.value = this.value.toUpperCase()" required autocomplete="off">
+                    </div>
+
+                    <div class="input-box input-box-spaced-sm">
+                        <label for="cadLocalizacao">Localização</label>
+                        <input type="text" id="cadLocalizacao" autocomplete="off">
+                    </div>
+
+                    <div class="input-box input-box-spaced-sm">
+                        <label for="cadMinimo">Mínimo</label>
+                        <input type="number" id="cadMinimo" min="0" autocomplete="off">
+                    </div>
+
+                    <div class="input-box input-box-spaced-sm">
+                        <label for="cadMaximo">Máximo</label>
+                        <input type="number" id="cadMaximo" min="0" autocomplete="off">
+                    </div>
+
+                    <div class="input-box">
+                        <label for="cadSaldo">Saldo</label>
+                        <input type="number" id="cadSaldo" min="0" autocomplete="off">
                     </div>
 
                     <div class="page-actions">
@@ -112,7 +137,8 @@
                         <input type="text" id="buscaItemCatalogo" placeholder="Código ou descrição" autocomplete="off">
                     </div>
                     <div class="catalog-toolbar-actions no-print">
-                        <button type="button" class="btn-import" id="btnImportarCatalogo" onclick="importarDados()">Importar dados</button>
+                        <button type="button" class="btn-import" id="btnImportarCatalogo" disabled title="Importação disponível em breve">Importar CSV</button>
+                        <button type="button" class="btn-export" id="btnExportarCatalogo" disabled title="Exportação disponível em breve">Exportar CSV</button>
                     </div>
                 </div>
 

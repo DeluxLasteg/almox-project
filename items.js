@@ -13,6 +13,11 @@ const formCadastroItem = document.getElementById("formCadastroItem");
 const inputCadCodigo = document.getElementById("cadCodigo");
 const inputCadCodigoOriginal = document.getElementById("cadCodigoOriginal");
 const inputCadDescricao = document.getElementById("cadDescricao");
+const inputCadCodigoOriginalMaterial = document.getElementById("cadCodigoOriginalMaterial");
+const inputCadLocalizacao = document.getElementById("cadLocalizacao");
+const inputCadMinimo = document.getElementById("cadMinimo");
+const inputCadMaximo = document.getElementById("cadMaximo");
+const inputCadSaldo = document.getElementById("cadSaldo");
 const inputBuscaItemCatalogo = document.getElementById("buscaItemCatalogo");
 const listaItensCadastrados = document.getElementById("listaItensCadastrados");
 const contadorItensCatalogo = document.getElementById("contadorItensCatalogo");
@@ -452,7 +457,7 @@ function filtrarCatalogo() {
     }
 
     return catalogoItens.filter((item) => {
-        const baseBusca = [item.codigo, item.descricao].join(" ");
+        const baseBusca = [item.codigo, item.descricao, item.localizacao].join(" ");
         return normalizarBusca(baseBusca).includes(termo);
     });
 }
@@ -461,6 +466,11 @@ function salvarItemCatalogo() {
     const codigo = inputCadCodigo.value.toUpperCase().trim();
     const descricao = inputCadDescricao.value.toUpperCase().trim();
     const codigoOriginal = inputCadCodigoOriginal.value.toUpperCase().trim();
+    const codigoOriginalMaterial = inputCadCodigoOriginalMaterial.value.toUpperCase().trim();
+    const localizacao = inputCadLocalizacao.value.toUpperCase().trim();
+    const minimo = inputCadMinimo.value ? parseInt(inputCadMinimo.value, 10) : 0;
+    const maximo = inputCadMaximo.value ? parseInt(inputCadMaximo.value, 10) : 0;
+    const saldo = inputCadSaldo.value ? parseInt(inputCadSaldo.value, 10) : 0;
     const itemExistente = catalogoItens.find((item) => item.codigo === codigo);
 
     if (!codigo || !descricao) {
@@ -492,6 +502,11 @@ function salvarItemCatalogo() {
     store.put({
         codigo,
         descricao,
+        codigoOriginalMaterial,
+        localizacao,
+        minimo,
+        maximo,
+        saldo,
         criadoEm: itemOriginal?.criadoEm || agora,
         atualizadoEm: agora
     });
@@ -589,6 +604,11 @@ function prepararEdicaoItemCatalogo(codigo) {
     inputCadCodigoOriginal.value = item.codigo;
     inputCadCodigo.value = item.codigo;
     inputCadDescricao.value = item.descricao;
+    inputCadCodigoOriginalMaterial.value = item.codigoOriginalMaterial || "";
+    inputCadLocalizacao.value = item.localizacao || "";
+    inputCadMinimo.value = item.minimo || "";
+    inputCadMaximo.value = item.maximo || "";
+    inputCadSaldo.value = item.saldo || "";
     btnSalvarItem.textContent = "Atualizar";
     btnSalvarItem.className = "btn-update";
     btnCancelarEdicaoItem.hidden = false;
@@ -613,7 +633,11 @@ function renderizarListaItens() {
 
         const info = document.createElement("div");
         info.className = "item-info";
-        info.innerHTML = `<strong>${escapeHtml(item.codigo)}</strong><span>${escapeHtml(item.descricao)}</span>`;
+        info.innerHTML = `
+            <strong>${escapeHtml(item.codigo)}</strong>
+            <span>${escapeHtml(item.descricao)}</span>
+            <small>Localização: ${escapeHtml(item.localizacao || "N/A")} | Saldo: ${item.saldo || 0}</small>
+        `;
 
         const actions = document.createElement("div");
         actions.className = "item-actions";
