@@ -10,9 +10,6 @@ const APP_SHELL_FILES = [
     "./index.js",
     "./items.js",
     "./manifest.webmanifest",
-    "./icons/teste.png",
-    "./icons/teste.png",
-    "./icons/teste.png",
     "./icons/teste.png"
 ];
 

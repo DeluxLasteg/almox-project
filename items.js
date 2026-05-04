@@ -1045,6 +1045,32 @@ function detectarDelimitadorCSV(linhaCabecalho) {
     return semicolonCount >= commaCount ? ";" : ",";
 }
 
+async function lerTextoCSV(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const tentarDecodificacao = (encoding) => {
+        try {
+            return new TextDecoder(encoding, { fatal: false }).decode(arrayBuffer);
+        } catch (error) {
+            return null;
+        }
+    };
+
+    const textoUtf8 = tentarDecodificacao("utf-8");
+    if (textoUtf8 && !textoUtf8.includes("�")) {
+        return textoUtf8;
+    }
+
+    const fallbackEncodings = ["windows-1252", "iso-8859-1"];
+    for (const encoding of fallbackEncodings) {
+        const textoFallback = tentarDecodificacao(encoding);
+        if (textoFallback && !textoFallback.includes("�")) {
+            return textoFallback;
+        }
+    }
+
+    return textoUtf8 || "";
+}
+
 function parseCSV(text) {
     if (typeof text !== "string") {
         return [];
@@ -1172,7 +1198,7 @@ async function importarCSV() {
         if (!file) return;
 
         try {
-            const text = await file.text();
+            const text = await lerTextoCSV(file);
             const rows = parseCSV(text);
 
             if (!rows.length || rows.length < 2) {
