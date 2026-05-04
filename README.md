@@ -15,7 +15,7 @@ Todo o desenvolvimento lógico e estrutural foi construído com o auxílio de In
 * **Painel de Controle (Dashboard):** Visão geral rápida dos níveis de estoque e estatísticas importantes.
 * **Controle de Acesso:** Diferentes níveis de permissão para usuários do sistema.
 * **Integração em Nuvem:** Dados persistidos de forma segura e sincronizada entre diferentes dispositivos.
-* **Interface Responsiva e Intuitiva:** Layout desenhado para facilitar a operação diária no PDV.
+* **Interface Responsiva e Intuitiva:** Layout desenhado para facilitar a operação diária.
 
 ## 🛠️ Tecnologias Utilizadas
 
