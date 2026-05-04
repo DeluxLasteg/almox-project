@@ -1039,6 +1039,101 @@ async function exportarCSV() {
     }
 }
 
+function detectarDelimitadorCSV(linhaCabecalho) {
+    const semicolonCount = (linhaCabecalho.match(/;/g) || []).length;
+    const commaCount = (linhaCabecalho.match(/,/g) || []).length;
+    return semicolonCount >= commaCount ? ";" : ",";
+}
+
+function parseCSV(text) {
+    if (typeof text !== "string") {
+        return [];
+    }
+
+    const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const delimiter = detectarDelimitadorCSV(normalized.split("\n")[0] || "");
+    const rows = [];
+    let current = "";
+    let row = [];
+    let inQuotes = false;
+
+    for (let index = 0; index < normalized.length; index++) {
+        const char = normalized[index];
+        const nextChar = normalized[index + 1];
+
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                current += '"';
+                index++;
+                continue;
+            }
+            inQuotes = !inQuotes;
+            continue;
+        }
+
+        if (char === delimiter && !inQuotes) {
+            row.push(current);
+            current = "";
+            continue;
+        }
+
+        if (char === "\n" && !inQuotes) {
+            row.push(current);
+            rows.push(row);
+            row = [];
+            current = "";
+            continue;
+        }
+
+        current += char;
+    }
+
+    if (current !== "" || row.length > 0) {
+        row.push(current);
+        rows.push(row);
+    }
+
+    return rows.map(r => r.map(cell => cell.trim()));
+}
+
+function normalizarCabecalhoCSV(coluna) {
+    return (coluna || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function identificarIndiceCamposCSV(cabecalho) {
+    const cabecalhos = cabecalho.map(normalizarCabecalhoCSV);
+    const mapa = {
+        codigo: ["codigo interno do material", "codigo interno", "codigo"],
+        codigoOriginalMaterial: ["codigo original do material", "codigo original"],
+        descricao: ["descricao do material", "descricao"],
+        localizacao: ["localizacao", "local"],
+        minimo: ["minimo", "estoque minimo", "min"],
+        maximo: ["maximo", "estoque maximo", "max"],
+        saldo: ["saldo", "quantidade", "qtd"]
+    };
+
+    const indices = {};
+    Object.keys(mapa).forEach((campo) => {
+        const alternativas = mapa[campo];
+        const encontrado = cabecalhos.findIndex((valor) => alternativas.some((alternativa) => valor.includes(alternativa)));
+        if (encontrado !== -1) {
+            indices[campo] = encontrado;
+        }
+    });
+
+    return indices;
+}
+
+function parsearNumeroCSV(valor) {
+    if (valor == null) {
+        return 0;
+    }
+
+    const texto = String(valor).replace(/\./g, "").replace(/,/g, ".").trim();
+    const numero = Number(texto);
+    return Number.isFinite(numero) ? Math.round(numero) : 0;
+}
+
 async function importarCSV() {
     const input = document.createElement("input");
     input.type = "file";
@@ -1050,79 +1145,69 @@ async function importarCSV() {
 
         try {
             const text = await file.text();
-            const linhas = text.split("\n").filter(linha => linha.trim());
+            const rows = parseCSV(text);
 
-            if (linhas.length < 2) {
+            if (!rows.length || rows.length < 2) {
                 throw new Error("Arquivo CSV deve ter pelo menos cabeçalho e uma linha de dados.");
             }
 
-            // Verificar cabeçalho
-            const cabecalho = linhas[0].split(";").map(col => col.replace(/"/g, "").trim());
-            const cabecalhoEsperado = [
-                "Código interno do material",
-                "Código original do material",
-                "Descrição do material",
-                "Localização",
-                "Mínimo",
-                "Máximo",
-                "Saldo"
-            ];
+            const indices = identificarIndiceCamposCSV(rows[0]);
+            const camposObrigatorios = ["codigo", "descricao", "localizacao", "saldo"];
 
-            const cabecalhoValido = cabecalhoEsperado.every((col, index) =>
-                cabecalho[index] && cabecalho[index].toLowerCase().includes(col.toLowerCase().split(" ")[0])
-            );
-
-            if (!cabecalhoValido) {
-                throw new Error("Cabeçalho do CSV não corresponde ao formato esperado.");
+            if (!camposObrigatorios.every((campo) => typeof indices[campo] === "number")) {
+                throw new Error("O CSV não contém colunas obrigatórias compatíveis com o catálogo do aplicativo.");
             }
 
-            // Processar dados
             const itensParaImportar = [];
-            for (let i = 1; i < linhas.length; i++) {
-                const colunas = linhas[i].split(";").map(col => col.replace(/^"|"$/g, "").replace(/""/g, '"').trim());
 
-                if (colunas.length < 7) continue;
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row.some((cell) => cell && cell.trim())) {
+                    continue;
+                }
 
-                const [codigo, codigoOriginal, descricao, localizacao, minimo, maximo, saldo] = colunas;
-
-                if (!codigo || !descricao) continue;
+                const codigo = row[indices.codigo] || "";
+                const descricao = row[indices.descricao] || "";
+                if (!codigo.trim() || !descricao.trim()) {
+                    continue;
+                }
 
                 itensParaImportar.push({
-                    codigo: codigo.toUpperCase(),
-                    codigoOriginalMaterial: codigoOriginal.toUpperCase(),
-                    descricao: descricao.toUpperCase(),
-                    localizacao: localizacao.toUpperCase(),
-                    minimo: parseInt(minimo) || 0,
-                    maximo: parseInt(maximo) || 0,
-                    saldo: parseInt(saldo) || 0
+                    codigo: String(codigo).toUpperCase().trim(),
+                    codigoOriginalMaterial: String(row[indices.codigoOriginalMaterial] || "").toUpperCase().trim(),
+                    descricao: String(descricao).toUpperCase().trim(),
+                    localizacao: String(row[indices.localizacao] || "").toUpperCase().trim(),
+                    minimo: parsearNumeroCSV(row[indices.minimo] || "0"),
+                    maximo: parsearNumeroCSV(row[indices.maximo] || "0"),
+                    saldo: parsearNumeroCSV(row[indices.saldo] || "0")
                 });
             }
 
             if (!itensParaImportar.length) {
-                throw new Error("Nenhum item válido encontrado no CSV.");
+                throw new Error("Nenhum item válido foi encontrado no CSV.");
             }
 
-            // Confirmar importação
             const confirmou = await confirmarAcaoCritica({
                 variant: "warning",
                 badge: "Importação CSV",
                 titulo: "Importar itens do CSV",
-                mensagem: `Deseja importar ${formatarContagem(itensParaImportar.length, "item", "itens")}? Itens existentes serão atualizados.`,
+                mensagem: `Deseja importar ${formatarContagem(itensParaImportar.length, "item", "itens")} para o catálogo? Itens existentes serão atualizados.`,
                 textoConfirmar: "Importar CSV"
             });
 
-            if (!confirmou) return;
+            if (!confirmou) {
+                return;
+            }
 
-            // Importar itens
             const transaction = db.transaction(STORE_ITENS, "readwrite");
             const store = transaction.objectStore(STORE_ITENS);
 
-            const promises = itensParaImportar.map(item => {
+            const promises = itensParaImportar.map((item) => {
                 return new Promise((resolve, reject) => {
                     const agora = new Date().toISOString();
                     const itemComTimestamps = {
                         ...item,
-                        criadoEm: item.criadoEm || agora,
+                        criadoEm: agora,
                         atualizadoEm: agora
                     };
 
@@ -1133,17 +1218,13 @@ async function importarCSV() {
             });
 
             await Promise.all(promises);
-
-            // Aguardar transação completar
-            await new Promise(resolve => transaction.oncomplete = resolve);
-
+            await new Promise((resolve) => { transaction.oncomplete = resolve; });
             await carregarCatalogo();
 
             definirMensagem(`${formatarContagem(itensParaImportar.length, "item", "itens")} importados do CSV.`, "success", {
                 toast: true,
                 toastTitle: "Importação concluída"
             });
-
         } catch (error) {
             console.error("Erro ao importar CSV:", error);
             definirMensagem(error.message || "Não foi possível importar o CSV.", "warning", {
