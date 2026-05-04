@@ -1100,22 +1100,50 @@ function normalizarCabecalhoCSV(coluna) {
     return (coluna || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
+function escaparRegExp(texto) {
+    return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function compararCabecalho(valor, alternativa) {
+    if (!valor || !alternativa) {
+        return false;
+    }
+
+    const valorNormalizado = normalizarCabecalhoCSV(valor);
+    const alternativaNormalizada = normalizarCabecalhoCSV(alternativa);
+
+    if (valorNormalizado === alternativaNormalizada) {
+        return true;
+    }
+
+    const padrao = new RegExp(`(^|\\W)${escaparRegExp(alternativaNormalizada)}(\\W|$)`, "i");
+    return padrao.test(valorNormalizado);
+}
+
 function identificarIndiceCamposCSV(cabecalho) {
     const cabecalhos = cabecalho.map(normalizarCabecalhoCSV);
     const mapa = {
-        codigo: ["codigo interno do material", "codigo interno", "codigo"],
+        codigo: ["codigo interno do material", "codigo interno"],
         codigoOriginalMaterial: ["codigo original do material", "codigo original"],
-        descricao: ["descricao do material", "descricao"],
-        localizacao: ["localizacao", "local"],
-        minimo: ["minimo", "estoque minimo", "min"],
-        maximo: ["maximo", "estoque maximo", "max"],
-        saldo: ["saldo", "quantidade", "qtd"]
+        descricao: ["descricao do material"],
+        localizacao: ["localizacao"],
+        minimo: ["minimo", "estoque minimo"],
+        maximo: ["maximo", "estoque maximo"],
+        saldo: ["saldo"]
     };
 
     const indices = {};
     Object.keys(mapa).forEach((campo) => {
         const alternativas = mapa[campo];
-        const encontrado = cabecalhos.findIndex((valor) => alternativas.some((alternativa) => valor.includes(alternativa)));
+        let encontrado = -1;
+
+        for (const alternativa of alternativas) {
+            encontrado = cabecalhos.findIndex((valor) => compararCabecalho(valor, alternativa));
+            if (encontrado !== -1) {
+                break;
+            }
+        }
+
         if (encontrado !== -1) {
             indices[campo] = encontrado;
         }
