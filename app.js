@@ -177,6 +177,20 @@ function inicializarMenuAcesso() {
                 return;
             }
 
+            if (action === "relatorios") {
+                if (!paginaAtualEh("relatorios.html")) {
+                    window.location.href = "relatorios.html";
+                }
+                return;
+            }
+
+            if (action === "historico") {
+                if (!paginaAtualEh("historico.html")) {
+                    window.location.href = "historico.html";
+                }
+                return;
+            }
+
             if (action === "configuracoes") {
                 abrirModalConfiguracoes();
                 return;

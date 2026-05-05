@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico | Almox Project</title>
+    <meta name="theme-color" content="#1e293b">
+    <meta name="application-name" content="Almox Project">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/teste.png" type="image/png">
+    <link rel="apple-touch-icon" href="icons/teste.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/teste.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icons/teste.png">
+    <script>
+        (function () {
+            var knownThemes = {
+                "default": "#1e293b",
+                "light": "#ffffff"
+            };
+            var themeMetaColor = document.querySelector('meta[name="theme-color"]');
+
+            try {
+                var savedTheme = localStorage.getItem("almox_theme") || "default";
+                var normalizedTheme = Object.prototype.hasOwnProperty.call(knownThemes, savedTheme) ? savedTheme : "default";
+                document.documentElement.setAttribute("data-theme", normalizedTheme);
+                if (themeMetaColor) {
+                    themeMetaColor.setAttribute("content", knownThemes[normalizedTheme]);
+                }
+            } catch (error) {
+                document.documentElement.setAttribute("data-theme", "default");
+                if (themeMetaColor) {
+                    themeMetaColor.setAttribute("content", knownThemes["default"]);
+                }
+            }
+        }());
+    </script>
+    <link rel="stylesheet" href="style.CSS">
+    <link rel="stylesheet" href="theme.CSS">
+</head>
+<body>
+    <div class="container">
+        <div class="header-container header-container-menu">
+            <div class="page-title-group">
+                <a class="page-link no-print" href="index.html">Voltar para saídas</a>
+                <h2>HISTÓRICO</h2>
+                <p class="page-subtitle">Consulte todas as saídas registradas com filtros rápidos e exportação.</p>
+            </div>
+
+            <div class="header-actions header-actions-menu no-print">
+                <div class="retractable-tab">
+                    <button class="btn-menu-toggle" type="button" id="btnMenuToggle" aria-label="Abrir menu" aria-expanded="false">
+                        <span class="menu-icon"></span>
+                    </button>
+                    <div class="retractable-content" id="retractableContent" hidden>
+                        <button type="button" class="btn-future-action" data-action="saidas">SAÍDAS</button>
+                        <button type="button" class="btn-future-action" data-action="relatorios">RELATÓRIOS</button>
+                        <button type="button" class="btn-future-action" data-action="estoque">ESTOQUE</button>
+                        <button type="button" class="btn-future-action" data-action="fornecedores">FORNECEDORES</button>
+                        <button type="button" class="btn-future-action" data-action="usuarios">USUÁRIOS</button>
+                        <button type="button" class="btn-future-action" data-action="historico">HISTÓRICO</button>
+                        <button type="button" class="btn-future-action" data-action="configuracoes">CONFIGURAÇÕES</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="page-panel page-panel-overview">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Registros totais</span>
+                    <strong class="stat-value" id="statRegistros">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Quantidade total</span>
+                    <strong class="stat-value" id="statQuantidade">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Frotas diferentes</span>
+                    <strong class="stat-value" id="statFrotas">0</strong>
+                </div>
+            </div>
+
+            <div class="report-toolbar">
+                <div class="input-box">
+                    <label for="buscaHistorico">Buscar no histórico</label>
+                    <input type="text" id="buscaHistorico" placeholder="Frota, código, descrição, OS ou data" autocomplete="off">
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn-export" id="btnExportarHistorico">Exportar CSV</button>
+                    <button type="button" class="btn-danger" id="btnLimparHistorico">Limpar histórico</button>
+                </div>
+            </div>
+
+            <p class="result-meta" id="historicoMensagem">Carregando histórico...</p>
+        </section>
+
+        <section class="page-panel page-panel-scroll">
+            <div class="page-section-head">
+                <div>
+                    <h3>Movimentações do histórico</h3>
+                    <p class="page-subtitle">Lista completa de saídas registradas no banco de dados.</p>
+                </div>
+                <span class="result-meta" id="contadorHistorico">0 registros</span>
+            </div>
+            <div class="table-wrapper">
+                <table class="data-table" id="tabelaHistorico" aria-label="Lista de histórico de saídas">
+                    <thead>
+                        <tr>
+                            <th>Frota</th>
+                            <th>Cód.</th>
+                            <th>Qtd</th>
+                            <th>Descrição</th>
+                            <th>OS</th>
+                            <th>Data</th>
+                            <th>Atualizado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaHistorico"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="shared-utils.js?v=2" defer></script>
+    <script src="theme.js?v=2" defer></script>
+    <script src="app.js?v=2" defer></script>
+    <script src="history.js?v=1" defer></script>
+</body>
+</html>
