@@ -97,7 +97,7 @@
             <div class="btn-group">
                 <button type="submit" class="btn-add" id="btnSubmit">Registrar saída</button>
                 <button type="button" class="btn-cancel" id="btnCancel" hidden onclick="resetarFormulario(false)">Cancelar</button>
-                <button type="button" class="btn-print no-print" onclick="window.print()">Imprimir</button>
+                <button type="button" class="btn-print no-print" onclick="finalizarSaidas()">Finalizar Saídas</button>
                 <button type="button" class="btn-export no-print" onclick="exportarCSV()">Excel</button>
             </div>
         </form>
@@ -195,6 +195,19 @@
         </div>
     </div>
 
+    <div id="modalLimpeza" class="modal">
+        <div class="modal-content modal-critical-card modal-critical-card-info" role="dialog" aria-modal="true" aria-labelledby="tituloModalLimpeza" aria-describedby="mensagemModalLimpeza">
+            <span class="modal-critical-badge">Finalização</span>
+            <h3 id="tituloModalLimpeza" class="modal-critical-title">Limpeza do histórico</h3>
+            <p id="mensagemModalLimpeza" class="modal-critical-message">Deseja limpar o histórico de saídas da tela?</p>
+            <p class="modal-critical-detail">Os registros foram impressos e o estoque foi atualizado. Esta ação remove os dados da tela, mas mantém o backup salvo.</p>
+            <div class="modal-critical-actions">
+                <button class="btn-add" id="btnConfirmarLimpeza" type="button">Confirmar</button>
+                <button class="btn-cancel" id="btnCancelarLimpeza" type="button">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modalConfiguracoes" class="modal" aria-hidden="true">
         <div class="modal-content modal-content-has-close settings-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalConfiguracoes" aria-describedby="descricaoModalConfiguracoes">
             <button class="close" type="button" aria-label="Fechar configurações" data-settings-close>&times;</button>
@@ -246,6 +259,7 @@
                             <button class="btn-print" type="button" onclick="fecharModalConfiguracoes(); window.print();">Imprimir tela</button>
                             <button class="btn-export" type="button" onclick="fecharModalConfiguracoes(); exportarCSV();">Exportar CSV</button>
                             <button class="btn-export" type="button" onclick="fecharModalConfiguracoes(); exportarTodosDados();">Exportar tudo</button>
+                            <button class="btn-export" type="button" onclick="fecharModalConfiguracoes(); exportarUltimoBackup();">Exportar último backup</button>
                             <button class="btn-import" type="button" onclick="fecharModalConfiguracoes(); importarDados();">Importar dados</button>
                             <button class="btn-itens-header" type="button" onclick="fecharModalConfiguracoes(); abrirPaginaItens();">Abrir itens</button>
                         </div>

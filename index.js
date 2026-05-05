@@ -1,6 +1,7 @@
 const DB_NAME = "AlmoxarifadoDB";
 const STORE_SAIDAS = "saidas";
 const STORE_ITENS = "itens_cadastro";
+const STORE_BACKUP_SAIDAS = "backup_saidas";
 const ITEM_PAGE_PATH = "itens.html";
 const ITEM_PAGE_CONTEXT_KEY = "almox_item_page_context";
 const SAIDA_DRAFT_STORAGE_KEY = "almox_saida_draft";
@@ -14,6 +15,7 @@ let sugestoesVisiveis = [];
 let indiceSugestaoAtiva = -1;
 let ultimoElementoFocado = null;
 let registroSaidaEmEdicao = null;
+let registroFrotaEmEdicaoId = null;
 let resolverModalAtencao = null;
 let saidasFiltradasAtuais = [];
 let seletorFocoDetalhesFrotaPendente = null;
@@ -61,6 +63,9 @@ const modalAtencaoDetalhe = document.getElementById("modalAtencaoDetalhe");
 const btnModalAtencaoCancelar = document.getElementById("btnModalAtencaoCancelar");
 const btnModalAtencaoConfirmar = document.getElementById("btnModalAtencaoConfirmar");
 const modalAtencaoAcoes = document.querySelector("#modalAtencao .modal-critical-actions");
+const modalLimpeza = document.getElementById("modalLimpeza");
+const btnConfirmarLimpeza = document.getElementById("btnConfirmarLimpeza");
+const btnCancelarLimpeza = document.getElementById("btnCancelarLimpeza");
 
 inicializarEventos();
 inicializarBanco();
@@ -73,7 +78,7 @@ function inicializarEventos() {
     });
     listaFrotas.addEventListener("click", tratarCliqueTabelaItens);
     listaFrotas.addEventListener("keydown", tratarTecladoTabelaItens);
-    [modalItens, modalConfirmacao, modalAtencao].forEach((modal) => {
+    [modalItens, modalConfirmacao, modalAtencao, modalLimpeza].forEach((modal) => {
         definirEstadoModal(modal, false);
     });
 
@@ -173,7 +178,7 @@ function ativarComportamentoCampoOrdemServico() {
 }
 
 function inicializarBanco() {
-    const request = indexedDB.open(DB_NAME, 4);
+    const request = indexedDB.open(DB_NAME, 5);
 
     request.onupgradeneeded = (event) => {
         const database = event.target.result;
@@ -192,6 +197,10 @@ function inicializarBanco() {
             storeItens = database.createObjectStore(STORE_ITENS, { keyPath: "codigo" });
         } else {
             storeItens = event.target.transaction.objectStore(STORE_ITENS);
+        }
+
+        if (!database.objectStoreNames.contains(STORE_BACKUP_SAIDAS)) {
+            database.createObjectStore(STORE_BACKUP_SAIDAS, { keyPath: "id" });
         }
 
         // Adicionar índices para melhor performance (versão 4)
@@ -411,62 +420,49 @@ async function restaurarBackupAutomatico() {
             throw new Error("Banco de dados ainda não inicializado. Tente novamente em alguns segundos.");
         }
 
-        const backupJson = localStorage.getItem("almox_backup_auto");
-        if (!backupJson) {
+        const transactionBackup = db.transaction(STORE_BACKUP_SAIDAS, "readonly");
+        const storeBackup = transactionBackup.objectStore(STORE_BACKUP_SAIDAS);
+        const requestBackup = storeBackup.get(1);
+
+        const dadosBackup = await new Promise((resolve, reject) => {
+            requestBackup.onsuccess = () => resolve(requestBackup.result);
+            requestBackup.onerror = () => reject(new Error("Erro ao ler o backup do banco de dados."));
+        });
+
+        if (!dadosBackup || !dadosBackup.saidas || !Array.isArray(dadosBackup.saidas)) {
             window.mostrarToast?.({
                 variant: "warning",
                 title: "Backup não encontrado",
-                message: "Nenhum backup automático foi encontrado."
+                message: "Nenhum backup automático salvo no banco de dados foi encontrado."
             });
             return;
-        }
-
-        const dadosBackup = JSON.parse(backupJson);
-
-        // Validar backup
-        if (!dadosBackup.saidas || !dadosBackup.itens || !Array.isArray(dadosBackup.saidas) || !Array.isArray(dadosBackup.itens)) {
-            throw new Error("Backup inválido ou corrompido.");
         }
 
         const dataBackup = new Date(dadosBackup.dataBackup);
         const diasAtras = Math.floor((new Date() - dataBackup) / (1000 * 60 * 60 * 24));
 
-        // Confirmar restauração
         const confirmou = await confirmarAcaoCritica({
             variant: "warning",
             badge: "Restaurar backup",
             titulo: "Restaurar backup automático",
             mensagem: `Deseja restaurar o backup de ${formatarContagem(diasAtras, "dia", "dias")} atrás?`,
-            detalhe: `Backup criado em: ${dataBackup.toLocaleString()}\nContém: ${formatarContagem(dadosBackup.saidas.length, "saída", "saídas")} e ${formatarContagem(dadosBackup.itens.length, "item", "itens")}\n\nOs dados atuais serão substituídos.`,
+            detalhe: `Backup criado em: ${dataBackup.toLocaleString()}\nContém: ${formatarContagem(dadosBackup.saidas.length, "saída", "saídas")}\n\nOs dados atuais serão substituídos.`,
             textoConfirmar: "Restaurar backup"
         });
 
         if (!confirmou) return;
 
-        // Limpar dados atuais
-        const transaction = db.transaction([STORE_SAIDAS, STORE_ITENS], "readwrite");
+        const transaction = db.transaction(STORE_SAIDAS, "readwrite");
         const storeSaidas = transaction.objectStore(STORE_SAIDAS);
-        const storeItens = transaction.objectStore(STORE_ITENS);
 
-        await Promise.all([
-            new Promise(resolve => storeSaidas.clear().onsuccess = resolve),
-            new Promise(resolve => storeItens.clear().onsuccess = resolve)
-        ]);
+        await new Promise(resolve => storeSaidas.clear().onsuccess = resolve);
 
-        // Restaurar dados do backup
         for (const saida of dadosBackup.saidas) {
             storeSaidas.add(saida);
         }
 
-        for (const item of dadosBackup.itens) {
-            storeItens.add(item);
-        }
-
-        // Aguardar transação completar
         await new Promise(resolve => transaction.oncomplete = resolve);
 
-        // Recarregar dados
-        await carregarCatalogo();
         await carregarDados();
 
         window.mostrarToast?.({
@@ -474,7 +470,6 @@ async function restaurarBackupAutomatico() {
             title: "Backup restaurado",
             message: `Backup de ${formatarContagem(diasAtras, "dia", "dias")} atrás restaurado com sucesso.`
         });
-
     } catch (error) {
         console.error("Erro ao restaurar backup:", error);
         window.mostrarToast?.({
@@ -1973,12 +1968,22 @@ function TabelaItens({ registros = [] } = {}) {
 }
 
 function renderizarRegistrosFrota(registros) {
-    const acaoEditar = "prepararEdicao";
+    const acaoEditar = "iniciarEdicaoFrotaCard";
     const acaoExcluir = "deletarItem";
 
-    return registros.map((item) => `
-        <article class="registro-card">
+    return registros.map((item) => {
+        const estaEditando = registroFrotaEmEdicaoId === item.id;
+
+        return `
+        <article class="registro-card ${estaEditando ? "registro-card-editing" : ""}">
             <div class="registro-fields">
+                ${estaEditando ? `
+                    <div class="registro-field registro-field-wide">
+                        <label class="registro-label" for="frota-edicao-${item.id}">Frota</label>
+                        <input id="frota-edicao-${item.id}" class="registro-input" type="text" value="${escapeHtml(item.frota)}" autocomplete="off">
+                    </div>
+                ` : ""}
+
                 <div class="registro-field">
                     <span class="registro-label">Código</span>
                     <strong class="registro-value">${escapeHtml(item.codigo)}</strong>
@@ -2001,11 +2006,93 @@ function renderizarRegistrosFrota(registros) {
                 </div>
             </div>
             <div class="registro-actions no-print">
-                <button type="button" onclick="${acaoEditar}(${item.id})" class="btn-icon">Editar</button>
-                <button type="button" onclick="${acaoExcluir}(${item.id})" class="btn-icon">Excluir</button>
+                ${estaEditando ? `
+                    <button type="button" class="btn-add" onclick="salvarEdicaoFrotaCard(${item.id})">Salvar</button>
+                    <button type="button" class="btn-cancel" onclick="cancelarEdicaoFrotaCard()">Cancelar</button>
+                ` : `
+                    <button type="button" onclick="${acaoEditar}(${item.id})" class="btn-icon">Editar</button>
+                    <button type="button" onclick="${acaoExcluir}(${item.id})" class="btn-icon">Excluir</button>
+                `}
             </div>
         </article>
-    `).join("");
+    `;
+    }).join("");
+}
+
+function iniciarEdicaoFrotaCard(id) {
+    registroFrotaEmEdicaoId = id;
+    atualizarInterfaceSaidas();
+    window.setTimeout(() => {
+        const input = document.getElementById(`frota-edicao-${id}`);
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 0);
+}
+
+function cancelarEdicaoFrotaCard() {
+    registroFrotaEmEdicaoId = null;
+    atualizarInterfaceSaidas();
+}
+
+async function salvarEdicaoFrotaCard(id) {
+    try {
+        if (!db) {
+            throw new Error("Banco de dados ainda não inicializado.");
+        }
+
+        const input = document.getElementById(`frota-edicao-${id}`);
+        const novaFrota = input?.value.toUpperCase().trim();
+
+        if (!novaFrota) {
+            window.mostrarToast?.({
+                variant: "warning",
+                title: "Frota inválida",
+                message: "Informe a frota antes de salvar."
+            });
+            input?.focus();
+            return;
+        }
+
+        const store = executarTransacao(STORE_SAIDAS, "readwrite");
+
+        const registro = await new Promise((resolve, reject) => {
+            const request = store.get(id);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(new Error("Não foi possível carregar o registro para edição."));
+        });
+
+        if (!registro) {
+            throw new Error("Registro não encontrado.");
+        }
+
+        registro.frota = novaFrota;
+        registro.atualizadoEm = new Date().toISOString();
+
+        await new Promise((resolve, reject) => {
+            const request = store.put(registro);
+            request.onsuccess = resolve;
+            request.onerror = () => reject(new Error("Não foi possível salvar a alteração da frota."));
+        });
+
+        registroFrotaEmEdicaoId = null;
+        await carregarDados();
+        localStorage.setItem('almox_saidas_updated', Date.now().toString());
+
+        window.mostrarToast?.({
+            variant: "success",
+            title: "Frota atualizada",
+            message: `Saída movida para a frota ${novaFrota}.`
+        });
+    } catch (error) {
+        console.error("Erro ao salvar edição de frota:", error);
+        window.mostrarToast?.({
+            variant: "danger",
+            title: "Erro ao editar",
+            message: error.message || "Não foi possível editar a frota." 
+        });
+    }
 }
 
 function renderizarResumoFrota(totalItens, totalQuantidade) {
@@ -2261,7 +2348,7 @@ async function deletarItem(id) {
         badge: "Exclusão de registro",
         titulo: "Excluir saída registrada",
         mensagem: "Deseja excluir esta saída?",
-        detalhe: "O registro será removido da frota e deixará de aparecer nos relatórios e na exportação.",
+        detalhe: "O registro será removido da frota e o estoque será ajustado corretamente.",
         textoConfirmar: "Excluir saída"
     });
 
@@ -2269,21 +2356,74 @@ async function deletarItem(id) {
         return;
     }
 
-    executarTransacao(STORE_SAIDAS, "readwrite").delete(id).onsuccess = async () => {
+    try {
+        if (!db) {
+            throw new Error("Banco de dados ainda não inicializado.");
+        }
+
+        const transaction = db.transaction([STORE_SAIDAS, STORE_ITENS], "readwrite");
+        const storeSaidas = transaction.objectStore(STORE_SAIDAS);
+        const storeItens = transaction.objectStore(STORE_ITENS);
+
+        const registro = await new Promise((resolve, reject) => {
+            const request = storeSaidas.get(id);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(new Error("Não foi possível ler a saída para exclusão."));
+        });
+
+        if (!registro) {
+            throw new Error("Registro não encontrado para exclusão.");
+        }
+
+        const itemCatalogo = await new Promise((resolve, reject) => {
+            const request = storeItens.get(registro.codigo);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(new Error("Não foi possível ler o item do catálogo."));
+        });
+
+        if (itemCatalogo) {
+            itemCatalogo.saldo = (Number(itemCatalogo.saldo) || 0) + (Number(registro.qtd) || 0);
+            itemCatalogo.atualizadoEm = new Date().toISOString();
+
+            await new Promise((resolve, reject) => {
+                const request = storeItens.put(itemCatalogo);
+                request.onsuccess = resolve;
+                request.onerror = () => reject(new Error(`Não foi possível atualizar o estoque do item ${registro.codigo}.`));
+            });
+        }
+
+        await new Promise((resolve, reject) => {
+            const request = storeSaidas.delete(id);
+            request.onsuccess = resolve;
+            request.onerror = () => reject(new Error("Não foi possível excluir o registro de saída."));
+        });
+
+        await new Promise((resolve, reject) => {
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(new Error("Erro na transação de exclusão."));
+            transaction.onabort = () => reject(new Error("Transação de exclusão abortada."));
+        });
+
         if (registroSaidaEmEdicao?.id === id) {
             resetarFormulario(false);
         }
 
         await carregarDados();
-        // Notificar outras abas sobre atualização de saídas
         localStorage.setItem('almox_saidas_updated', Date.now().toString());
         window.mostrarToast?.({
             variant: "success",
             title: "Saída removida",
-            message: "O registro foi excluído da lista com sucesso."
+            message: "O registro foi excluído e o estoque foi ajustado." 
         });
         inputFrota.focus();
-    };
+    } catch (error) {
+        console.error("Erro ao excluir saída:", error);
+        window.mostrarToast?.({
+            variant: "danger",
+            title: "Erro na exclusão",
+            message: error.message || "Não foi possível excluir o registro." 
+        });
+    }
 }
 
 function resetarFormulario(manterFrota = false) {
@@ -2411,6 +2551,63 @@ async function exportarTodosDados() {
     }
 }
 
+async function exportarUltimoBackup() {
+    try {
+        if (!db) {
+            throw new Error("Banco de dados ainda não inicializado. Tente novamente em alguns segundos.");
+        }
+
+        const transaction = db.transaction(STORE_BACKUP_SAIDAS, "readonly");
+        const store = transaction.objectStore(STORE_BACKUP_SAIDAS);
+        const request = store.get(1);
+
+        const backup = await new Promise((resolve, reject) => {
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(new Error("Erro ao acessar o backup"));
+        });
+
+        if (!backup) {
+            window.mostrarToast?.({
+                variant: "warning",
+                title: "Backup não encontrado",
+                message: "Nenhum backup automático foi encontrado para exportar."
+            });
+            return;
+        }
+
+        const dadosExportacao = {
+            backupSaidas: backup,
+            versao: "1.0",
+            dataExportacao: new Date().toISOString(),
+            aplicacao: "Almox Project - Backup Automático"
+        };
+
+        const json = JSON.stringify(dadosExportacao, null, 2);
+        const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `Almox_Project_Ultimo_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        const dataBackup = new Date(backup.dataBackup);
+        const diasAtras = Math.floor((new Date() - dataBackup) / (1000 * 60 * 60 * 24));
+
+        window.mostrarToast?.({
+            variant: "success",
+            title: "Backup exportado",
+            message: `Backup de ${formatarContagem(diasAtras, "dia", "dias")} atrás foi exportado com ${formatarContagem(backup.saidas.length, "registro", "registros")}.`
+        });
+    } catch (error) {
+        console.error("Erro ao exportar backup:", error);
+        window.mostrarToast?.({
+            variant: "danger",
+            title: "Erro na exportação",
+            message: "Não foi possível exportar o backup."
+        });
+    }
+}
+
 async function importarDados() {
     const input = document.createElement("input");
     input.type = "file";
@@ -2519,6 +2716,193 @@ async function importarDados() {
     input.click();
 }
 
+async function finalizarSaidas() {
+    try {
+        const saidasAtuais = filtrarSaidas();
+        if (!saidasAtuais.length) {
+            window.mostrarToast?.({
+                variant: "warning",
+                title: "Nenhuma saída",
+                message: "Não há registros de saída para finalizar."
+            });
+            return;
+        }
+
+        // 1. Imprimir
+        renderizarListaImpressao(saidasAtuais);
+        // Pequeno delay para garantir que o conteúdo seja renderizado
+        await new Promise(resolve => setTimeout(resolve, 100));
+        window.print();
+
+        // 2. Backup dos dados atuais
+        await salvarBackupSaidas(saidasAtuais);
+
+        // 3. Baixar do estoque
+        await baixarEstoque(saidasAtuais);
+
+        // 4. Modal de confirmação
+        await mostrarModalLimpeza();
+
+    } catch (error) {
+        console.error("Erro ao finalizar saídas:", error);
+        window.mostrarToast?.({
+            variant: "danger",
+            title: "Erro na finalização",
+            message: error.message || "Não foi possível finalizar as saídas."
+        });
+    }
+}
+
+async function salvarBackupSaidas(saidas) {
+    try {
+        const transaction = db.transaction(STORE_BACKUP_SAIDAS, "readwrite");
+        const store = transaction.objectStore(STORE_BACKUP_SAIDAS);
+
+        // Limpar backup anterior
+        await new Promise(resolve => store.clear().onsuccess = resolve);
+
+        // Salvar novo backup
+        const backup = {
+            id: 1,
+            saidas: saidas,
+            dataBackup: new Date().toISOString()
+        };
+
+        await new Promise((resolve, reject) => {
+            const request = store.put(backup);
+            request.onsuccess = resolve;
+            request.onerror = () => reject(new Error("Erro ao salvar backup"));
+        });
+
+        window.mostrarToast?.({
+            variant: "info",
+            title: "Backup salvo",
+            message: "Histórico de saídas salvo como backup."
+        });
+
+    } catch (error) {
+        throw new Error("Falha ao salvar backup: " + error.message);
+    }
+}
+
+async function baixarEstoque(saidas) {
+    try {
+        // Agrupar saídas por código
+        const saidasPorCodigo = {};
+        saidas.forEach(saida => {
+            if (!saidasPorCodigo[saida.codigo]) {
+                saidasPorCodigo[saida.codigo] = 0;
+            }
+            saidasPorCodigo[saida.codigo] += saida.qtd;
+        });
+
+        const transaction = db.transaction(STORE_ITENS, "readwrite");
+        const store = transaction.objectStore(STORE_ITENS);
+
+        const promises = Object.keys(saidasPorCodigo).map(async codigo => {
+            const item = await new Promise((resolve, reject) => {
+                const request = store.get(codigo);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(new Error(`Erro ao buscar item ${codigo}`));
+            });
+
+            if (!item) {
+                console.warn(`Item ${codigo} não encontrado no catálogo`);
+                return;
+            }
+
+            const novoSaldo = Math.max(0, (item.saldo || 0) - saidasPorCodigo[codigo]);
+            item.saldo = novoSaldo;
+            item.atualizadoEm = new Date().toISOString();
+
+            await new Promise((resolve, reject) => {
+                const request = store.put(item);
+                request.onsuccess = resolve;
+                request.onerror = () => reject(new Error(`Erro ao atualizar saldo do item ${codigo}`));
+            });
+        });
+
+        await Promise.all(promises);
+
+        window.mostrarToast?.({
+            variant: "success",
+            title: "Estoque atualizado",
+            message: "Itens baixados do estoque com sucesso."
+        });
+
+    } catch (error) {
+        throw new Error("Falha ao baixar estoque: " + error.message);
+    }
+}
+
+function mostrarModalLimpeza() {
+    return new Promise((resolve) => {
+        definirEstadoModal(modalLimpeza, true);
+
+        const confirmar = () => {
+            definirEstadoModal(modalLimpeza, false);
+            limparSaidas();
+            resolve(true);
+        };
+
+        const cancelar = () => {
+            definirEstadoModal(modalLimpeza, false);
+            resolve(false);
+        };
+
+        btnConfirmarLimpeza.onclick = confirmar;
+        btnCancelarLimpeza.onclick = cancelar;
+
+        // Fechar modal ao clicar fora
+        modalLimpeza.onclick = (event) => {
+            if (event.target === modalLimpeza) {
+                cancelar();
+            }
+        };
+
+        // Fechar modal com ESC
+        const handleEscape = (event) => {
+            if (event.key === "Escape") {
+                document.removeEventListener("keydown", handleEscape);
+                cancelar();
+            }
+        };
+        document.addEventListener("keydown", handleEscape);
+
+        // Focar no botão cancelar por segurança
+        btnCancelarLimpeza.focus();
+    });
+}
+
+async function limparSaidas() {
+    try {
+        const transaction = db.transaction(STORE_SAIDAS, "readwrite");
+        const store = transaction.objectStore(STORE_SAIDAS);
+
+        await new Promise(resolve => store.clear().onsuccess = resolve);
+
+        // Recarregar dados
+        await carregarDados();
+
+        // Notificar outras abas
+        localStorage.setItem('almox_saidas_updated', Date.now().toString());
+
+        window.mostrarToast?.({
+            variant: "success",
+            title: "Histórico limpo",
+            message: "Registros de saída removidos da tela."
+        });
+
+    } catch (error) {
+        console.error("Erro ao limpar saídas:", error);
+        window.mostrarToast?.({
+            variant: "danger",
+            title: "Erro na limpeza",
+            message: "Não foi possível limpar o histórico."
+        });
+    }
+}
+
 window.abrirModalItens = abrirModalItens;
 window.abrirPaginaItens = abrirPaginaItens;
 window.fecharModalItens = fecharModalItens;
@@ -2529,6 +2913,9 @@ window.prepararEdicao = prepararEdicao;
 window.prepararEdicaoPeloSpotlight = prepararEdicaoPeloSpotlight;
 window.deletarItem = deletarItem;
 window.deletarItemPeloSpotlight = deletarItemPeloSpotlight;
+window.iniciarEdicaoFrotaCard = iniciarEdicaoFrotaCard;
+window.cancelarEdicaoFrotaCard = cancelarEdicaoFrotaCard;
+window.salvarEdicaoFrotaCard = salvarEdicaoFrotaCard;
 window.handleRowClick = handleRowClick;
 window.toggleDetalhesFrota = toggleDetalhesFrota;
 window.minimizarDetalhesFrotas = minimizarDetalhesFrotas;
@@ -2538,3 +2925,4 @@ window.exportarTodosDados = exportarTodosDados;
 window.importarDados = importarDados;
 window.restaurarBackupAutomatico = restaurarBackupAutomatico;
 window.limparTudo = limparTudo;
+window.finalizarSaidas = finalizarSaidas;

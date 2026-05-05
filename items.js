@@ -128,7 +128,7 @@ function inicializarEventos() {
 }
 
 function inicializarBanco() {
-    const request = indexedDB.open(DB_NAME, 4);
+    const request = indexedDB.open(DB_NAME, 5);
 
     request.onupgradeneeded = (event) => {
         const database = event.target.result;
