@@ -35,6 +35,30 @@ function inicializarAplicacaoBase() {
     window.abrirModalConfiguracoes = abrirModalConfiguracoes;
     window.fecharModalConfiguracoes = fecharModalConfiguracoes;
     window.atualizarClasseGlobalDeModais = atualizarClasseGlobalDeModais;
+    document.addEventListener('keydown', tratarEscapePaginaSaidas, false);
+}
+
+function tratarEscapePaginaSaidas(event) {
+    if (event.key !== 'Escape') {
+        return;
+    }
+
+    const modal = obterModalConfiguracoes();
+    if (modal instanceof HTMLElement && modal.classList.contains('is-open')) {
+        return;
+    }
+
+    const sideMenu = document.getElementById(MENU_LATERAL_ID);
+    if (sideMenu instanceof HTMLElement && sideMenu.classList.contains('open')) {
+        fecharMenuLateral();
+        event.preventDefault();
+        return;
+    }
+
+    if (!paginaAtualEh('index.html')) {
+        event.preventDefault();
+        window.location.href = 'index.html';
+    }
 }
 
 function obterModalConfiguracoes() {
@@ -138,6 +162,21 @@ function paginaAtualEh(arquivo) {
     return paginaAtual === arquivo.toLowerCase();
 }
 
+function obterAcaoPaginaAtual() {
+    if (paginaAtualEh('index.html')) {
+        return 'saidas';
+    }
+    if (paginaAtualEh('itens.html')) {
+        return 'estoque';
+    }
+    if (paginaAtualEh('relatorios.html')) {
+        return 'relatorios';
+    }
+    if (paginaAtualEh('historico.html')) {
+        return 'historico';
+    }
+    return null;
+}
 
 function criarMenuLateral() {
     let sideMenu = document.getElementById(MENU_LATERAL_ID);
@@ -160,12 +199,18 @@ function criarMenuLateral() {
         { action: 'configuracoes', label: 'CONFIGURAÇÕES' }
     ];
 
+    const acaoAtual = obterAcaoPaginaAtual();
+
     actions.forEach(item => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn-future-action';
         btn.dataset.action = item.action;
         btn.textContent = item.label;
+        if (item.action === acaoAtual) {
+            btn.classList.add('active');
+            btn.setAttribute('aria-current', 'page');
+        }
         sideMenu.appendChild(btn);
     });
 
