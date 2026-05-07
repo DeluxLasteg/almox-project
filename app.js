@@ -7,12 +7,18 @@ const TOAST_DEFAULT_DURATION = 4200;
 const SETTINGS_MODAL_ID = "modalConfiguracoes";
 const SETTINGS_OPEN_SELECTOR = "[data-settings-open]";
 const SETTINGS_CLOSE_SELECTOR = "[data-settings-close]";
+const ZONA_ATIVACAO_MENU_LARGURA = 50; // pixels para ativar menu no lado direito
+const MENU_LATERAL_ID = "sideMenu";
 
 let deferredInstallPrompt = null;
 let toastSequence = 0;
 let toastRegionCreationScheduled = false;
 let ultimoElementoFocadoConfiguracoes = null;
 let recarregouPorAtualizacaoDoServiceWorker = false;
+let mouseNaZonaMenu = false;
+let mouseSobreMenu = false;
+let menuAberto = false;
+let animationFrameId = null;
 
 inicializarAplicacaoBase();
 
@@ -132,66 +138,143 @@ function paginaAtualEh(arquivo) {
     return paginaAtual === arquivo.toLowerCase();
 }
 
-function fecharMenuAcesso(btnMenuToggle, retractableContent) {
-    btnMenuToggle.setAttribute("aria-expanded", "false");
-    retractableContent.hidden = true;
+
+function criarMenuLateral() {
+    let sideMenu = document.getElementById(MENU_LATERAL_ID);
+    if (sideMenu) return sideMenu;
+
+    sideMenu = document.createElement('aside');
+    sideMenu.id = MENU_LATERAL_ID;
+    sideMenu.className = 'side-menu';
+
+    const header = document.createElement('div');
+    header.className = 'side-menu-header';
+    header.textContent = 'ALMOX PROJECT';
+    sideMenu.appendChild(header);
+
+    const actions = [
+        { action: 'saidas', label: 'SAÍDAS' },
+        { action: 'estoque', label: 'ESTOQUE' },
+        { action: 'relatorios', label: 'RELATÓRIOS' },
+        { action: 'historico', label: 'HISTÓRICO' },
+        { action: 'configuracoes', label: 'CONFIGURAÇÕES' }
+    ];
+
+    actions.forEach(item => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-future-action';
+        btn.dataset.action = item.action;
+        btn.textContent = item.label;
+        sideMenu.appendChild(btn);
+    });
+
+    document.body.appendChild(sideMenu);
+    return sideMenu;
+}
+
+function abrirMenuLateral() {
+    if (menuAberto) return;
+    menuAberto = true;
+    const sideMenu = document.getElementById(MENU_LATERAL_ID);
+    if (sideMenu) {
+        sideMenu.classList.add('open');
+    }
+}
+
+function fecharMenuLateral() {
+    if (!menuAberto) return;
+    menuAberto = false;
+    const sideMenu = document.getElementById(MENU_LATERAL_ID);
+    if (sideMenu) {
+        sideMenu.classList.remove('open');
+    }
+}
+
+function verificarPosicaoMouse(event) {
+    const naZona = event.clientX > window.innerWidth - ZONA_ATIVACAO_MENU_LARGURA;
+    if (naZona !== mouseNaZonaMenu) {
+        mouseNaZonaMenu = naZona;
+        if (naZona) {
+            abrirMenuLateral();
+        } else if (!mouseSobreMenu) {
+            fecharMenuLateral();
+        }
+    }
+}
+
+function verificarToqueLateral(event) {
+    if (event.touches.length === 1) {
+        const touch = event.touches[0];
+        const naZona = touch.clientX > window.innerWidth - ZONA_ATIVACAO_MENU_LARGURA;
+        if (naZona) {
+            abrirMenuLateral();
+        }
+    }
 }
 
 function inicializarMenuAcesso() {
-    const btnMenuToggle = document.getElementById("btnMenuToggle");
-    const retractableContent = document.getElementById("retractableContent");
+    const sideMenu = criarMenuLateral();
 
-    if (!btnMenuToggle || !retractableContent) {
-        return;
-    }
-
-    btnMenuToggle.addEventListener("click", (event) => {
-        event.stopPropagation();
-        const expanded = btnMenuToggle.getAttribute("aria-expanded") === "true";
-        btnMenuToggle.setAttribute("aria-expanded", !expanded);
-        retractableContent.hidden = expanded;
+    // Listener para detecção global do mouse no lado direito
+    document.addEventListener('pointermove', (event) => {
+        if (animationFrameId) return;
+        animationFrameId = requestAnimationFrame(() => {
+            verificarPosicaoMouse(event);
+            animationFrameId = null;
+        });
     });
 
-    document.addEventListener("click", (event) => {
-        if (!event.target.closest(".retractable-tab")) {
-            fecharMenuAcesso(btnMenuToggle, retractableContent);
+    // Listener para toque lateral em dispositivos móveis
+    document.addEventListener('touchstart', verificarToqueLateral, { passive: true });
+
+    // Manter menu aberto quando mouse está sobre ele
+    sideMenu.addEventListener('mouseenter', () => {
+        mouseSobreMenu = true;
+    });
+
+    sideMenu.addEventListener('mouseleave', () => {
+        mouseSobreMenu = false;
+        if (!mouseNaZonaMenu) {
+            fecharMenuLateral();
         }
     });
 
-    document.querySelectorAll(".btn-future-action").forEach((btn) => {
-        btn.addEventListener("click", () => {
+    // Ações dos botões do menu
+    sideMenu.querySelectorAll('.btn-future-action').forEach(btn => {
+        btn.addEventListener('click', () => {
             const action = btn.dataset.action;
-            fecharMenuAcesso(btnMenuToggle, retractableContent);
+            fecharMenuLateral();
 
-            if (action === "saidas") {
-                if (!paginaAtualEh("index.html")) {
-                    window.location.href = "index.html";
+            if (action === 'saidas') {
+                if (!paginaAtualEh('index.html')) {
+                    window.location.href = 'index.html';
                 }
                 return;
             }
 
-            if (action === "estoque") {
-                if (!paginaAtualEh("itens.html")) {
-                    window.location.href = "itens.html";
+            if (action === 'estoque') {
+                if (!paginaAtualEh('itens.html')) {
+                    window.location.href = 'itens.html';
                 }
                 return;
             }
 
-            if (action === "relatorios") {
-                if (!paginaAtualEh("relatorios.html")) {
-                    window.location.href = "relatorios.html";
+            if (action === 'relatorios') {
+                if (!paginaAtualEh('relatorios.html')) {
+                    window.location.href = 'relatorios.html';
                 }
                 return;
             }
 
-            if (action === "historico") {
-                if (!paginaAtualEh("historico.html")) {
-                    window.location.href = "historico.html";
+            if (action === 'historico') {
+                if (!paginaAtualEh('historico.html')) {
+                    window.location.href = 'historico.html';
                 }
                 return;
             }
 
-            if (action === "configuracoes") {
+            if (action === 'configuracoes') {
                 abrirModalConfiguracoes();
                 return;
             }

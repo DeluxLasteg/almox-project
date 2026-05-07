@@ -7,6 +7,7 @@ const TOAST_DEFAULT_DURATION = 4200;
 const SETTINGS_MODAL_ID = "modalConfiguracoes";
 const SETTINGS_OPEN_SELECTOR = "[data-settings-open]";
 const SETTINGS_CLOSE_SELECTOR = "[data-settings-close]";
+const ZONA_ATIVACAO_MENU_LARGURA = 50; // pixels para ativar menu no lado direito
 
 let db;
 let saidas = [];
@@ -14,6 +15,8 @@ let deferredInstallPrompt = null;
 let toastSequence = 0;
 let toastRegionCreationScheduled = false;
 let ultimoElementoFocadoConfiguracoes = null;
+let mouseNaZonaMenu = false;
+let mouseSobreMenu = false;
 
 const inputBuscaRelatorio = document.getElementById("buscaRelatorio");
 const btnExportarRelatorio = document.getElementById("btnExportarRelatorio");
@@ -30,7 +33,6 @@ inicializarAplicacaoBase();
 
 function inicializarAplicacaoBase() {
     criarRegiaoDeToasts();
-    inicializarMenuAcesso();
     inicializarModalConfiguracoes();
     atualizarCorDoTemaNoChrome();
     observarMudancasDeTema();
@@ -44,7 +46,6 @@ function inicializarAplicacaoBase() {
 
 function inicializarEventos() {
     document.addEventListener("keydown", tratarTecladoModalConfiguracoes, true);
-    document.addEventListener("click", tratarCliqueForaMenu);
 
     inputBuscaRelatorio.addEventListener("input", criarDebounce(() => {
         renderizarRelatorio();
@@ -222,55 +223,7 @@ async function exportarCSV() {
 }
 
 function inicializarMenuAcesso() {
-    const btnMenuToggle = document.getElementById("btnMenuToggle");
-    const retractableContent = document.getElementById("retractableContent");
-
-    if (!btnMenuToggle || !retractableContent) {
-        return;
-    }
-
-    btnMenuToggle.addEventListener("click", (event) => {
-        event.stopPropagation();
-        const expanded = btnMenuToggle.getAttribute("aria-expanded") === "true";
-        btnMenuToggle.setAttribute("aria-expanded", !expanded);
-        retractableContent.hidden = expanded;
-    });
-
-    document.addEventListener("click", (event) => {
-        if (!event.target.closest(".retractable-tab")) {
-            btnMenuToggle.setAttribute("aria-expanded", "false");
-            retractableContent.hidden = true;
-        }
-    });
-
-    document.querySelectorAll(".btn-future-action").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            const action = btn.dataset.action;
-            btnMenuToggle.setAttribute("aria-expanded", "false");
-            retractableContent.hidden = true;
-
-            if (action === "saidas") {
-                window.location.href = "index.html";
-                return;
-            }
-
-            if (action === "estoque") {
-                window.location.href = "itens.html";
-                return;
-            }
-
-            if (action === "relatorios") {
-                return;
-            }
-
-            if (action === "configuracoes") {
-                abrirModalConfiguracoes();
-                return;
-            }
-
-            console.log(`Ação "${action}" ainda não implementada`);
-        });
-    });
+    // Menu lateral é inicializado por app.js
 }
 
 function inicializarModalConfiguracoes() {
@@ -308,17 +261,6 @@ function tratarTecladoModalConfiguracoes(event) {
         event.preventDefault();
         event.stopPropagation();
         fecharModalConfiguracoes();
-    }
-}
-
-function tratarCliqueForaMenu(event) {
-    if (!event.target.closest(".retractable-tab")) {
-        const btnMenuToggle = document.getElementById("btnMenuToggle");
-        const retractableContent = document.getElementById("retractableContent");
-        if (btnMenuToggle && retractableContent) {
-            btnMenuToggle.setAttribute("aria-expanded", "false");
-            retractableContent.hidden = true;
-        }
     }
 }
 
