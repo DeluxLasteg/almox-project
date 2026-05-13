@@ -503,6 +503,13 @@ function formatarDataHoraImpressao(data = new Date()) {
     }).format(data);
 }
 
+function normalizarTextoParaPesquisa(value) {
+    return normalizarBusca(value)
+        .replace(/[^A-Z0-9 ]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 function gerarIdFrota(frota) {
     const base = normalizarBusca(frota)
         .replace(/[^A-Z0-9]+/g, "-")
@@ -1309,8 +1316,9 @@ inputCodigo.addEventListener("input", function () {
     const itemExato = catalogoItens.find((item) => item.codigo === valor);
     inputDescricao.value = itemExato ? itemExato.descricao : "";
 
+    const termoPesquisa = normalizarTextoParaPesquisa(valor);
     const matches = catalogoItens
-        .filter((item) => item.codigo.includes(valor) || normalizarBusca(item.descricao).includes(normalizarBusca(valor)))
+        .filter((item) => item.codigo.includes(valor) || normalizarTextoParaPesquisa(item.descricao).includes(termoPesquisa))
         .slice(0, 5);
 
     if (!matches.length) {
