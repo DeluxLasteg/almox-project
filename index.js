@@ -1317,10 +1317,19 @@ inputCodigo.addEventListener("input", function () {
     inputDescricao.value = itemExato ? itemExato.descricao : "";
 
     const termoPesquisa = normalizarTextoParaPesquisa(valor);
+    const palavrasPesquisa = termoPesquisa.split(/\s+/).filter(p => p.length > 0);
     const matches = catalogoItens
         .filter((item) => {
-            return normalizarTextoParaPesquisa(item.codigo).includes(termoPesquisa)
-                || normalizarTextoParaPesquisa(item.descricao).includes(termoPesquisa);
+            const codigoNormalizado = normalizarTextoParaPesquisa(item.codigo);
+            const descricaoNormalizada = normalizarTextoParaPesquisa(item.descricao);
+
+            // Verifica se o termo completo está no código ou descrição
+            if (codigoNormalizado.includes(termoPesquisa) || descricaoNormalizada.includes(termoPesquisa)) {
+                return true;
+            }
+
+            // Verifica se todas as palavras da pesquisa estão na descrição
+            return palavrasPesquisa.every(palavra => descricaoNormalizada.includes(palavra));
         })
         .slice(0, 5);
 
