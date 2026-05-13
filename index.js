@@ -1318,7 +1318,10 @@ inputCodigo.addEventListener("input", function () {
 
     const termoPesquisa = normalizarTextoParaPesquisa(valor);
     const matches = catalogoItens
-        .filter((item) => item.codigo.includes(valor) || normalizarTextoParaPesquisa(item.descricao).includes(termoPesquisa))
+        .filter((item) => {
+            return normalizarTextoParaPesquisa(item.codigo).includes(termoPesquisa)
+                || normalizarTextoParaPesquisa(item.descricao).includes(termoPesquisa);
+        })
         .slice(0, 5);
 
     if (!matches.length) {
