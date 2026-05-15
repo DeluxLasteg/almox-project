@@ -10,6 +10,75 @@ function normalizarBusca(value) {
         .trim();
 }
 
+function normalizarTermoPesquisa(value) {
+    return normalizarBusca(value)
+        .replace(/[^A-Z0-9 ]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function buscarPorCodigoExato(catalogo, termo) {
+    if (!Array.isArray(catalogo) || !termo) {
+        return [];
+    }
+
+    const termoNormalizado = normalizarBusca(termo);
+    return catalogo.filter((item) => normalizarBusca(item.codigo) === termoNormalizado);
+}
+
+function buscarPorInicioCodigo(catalogo, termo) {
+    if (!Array.isArray(catalogo) || !termo) {
+        return [];
+    }
+
+    const termoNormalizado = normalizarBusca(termo);
+    return catalogo.filter((item) => {
+        const codigoNormalizado = normalizarBusca(item.codigo);
+        return codigoNormalizado !== termoNormalizado && codigoNormalizado.startsWith(termoNormalizado);
+    });
+}
+
+function buscarPorDescricao(catalogo, termo) {
+    if (!Array.isArray(catalogo) || !termo) {
+        return [];
+    }
+
+    const termoNormalizado = normalizarTermoPesquisa(termo);
+    return catalogo.filter((item) => {
+        const descricaoNormalizada = normalizarTermoPesquisa(item.descricao);
+        return descricaoNormalizada.includes(termoNormalizado);
+    });
+}
+
+function buscarItensPorCodigoPrioritario(catalogo, termo, { maxResults = 5 } = {}) {
+    if (!Array.isArray(catalogo) || !termo) {
+        return [];
+    }
+
+    const itensExatos = buscarPorCodigoExato(catalogo, termo);
+    const itensPrefixo = buscarPorInicioCodigo(catalogo, termo);
+    const resultado = [...itensExatos, ...itensPrefixo];
+
+    if (resultado.length === 0) {
+        resultado.push(...buscarPorDescricao(catalogo, termo));
+    }
+
+    const vistos = new Set();
+    const unicos = [];
+
+    for (const item of resultado) {
+        if (!vistos.has(item.codigo)) {
+            vistos.add(item.codigo);
+            unicos.push(item);
+            if (maxResults > 0 && unicos.length >= maxResults) {
+                break;
+            }
+        }
+    }
+
+    return unicos;
+}
+
 function formatarContagem(valor, singular, plural = `${singular}s`) {
     return `${valor} ${valor === 1 ? singular : plural}`;
 }
@@ -100,6 +169,11 @@ function escapeHtml(value) {
 }
 
 window.normalizarBusca = normalizarBusca;
+window.normalizarTermoPesquisa = normalizarTermoPesquisa;
+window.buscarPorCodigoExato = buscarPorCodigoExato;
+window.buscarPorInicioCodigo = buscarPorInicioCodigo;
+window.buscarPorDescricao = buscarPorDescricao;
+window.buscarItensPorCodigoPrioritario = buscarItensPorCodigoPrioritario;
 window.formatarContagem = formatarContagem;
 window.criarDebounce = criarDebounce;
 window.focarCampo = focarCampo;

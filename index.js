@@ -9,6 +9,7 @@ const SAIDA_DRAFT_STORAGE_KEY = "almox_saida_draft";
 let db;
 let saidas = [];
 let catalogoItens = [];
+let ultimaAtualizacaoCatalogo = 0;
 let modalAberto = false;
 let cadastroRapidoPendente = false;
 let sugestoesVisiveis = [];
@@ -76,6 +77,17 @@ function inicializarEventos() {
     window.addEventListener("beforeprint", () => {
         renderizarListaImpressao(filtrarSaidas());
     });
+
+    window.addEventListener("focus", () => {
+        sincronizarCatalogoSeVisivel();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+            sincronizarCatalogoSeVisivel();
+        }
+    });
+
     listaFrotas.addEventListener("click", tratarCliqueTabelaItens);
     listaFrotas.addEventListener("keydown", tratarTecladoTabelaItens);
     [modalItens, modalConfirmacao, modalAtencao, modalLimpeza].forEach((modal) => {
@@ -677,6 +689,28 @@ function carregarCatalogo() {
             reject(error);
         }
     });
+}
+
+function sincronizarCatalogoSeVisivel() {
+    if (document.hidden || !db) {
+        return Promise.resolve();
+    }
+
+    const agora = Date.now();
+    if (agora - ultimaAtualizacaoCatalogo < 5000) {
+        return Promise.resolve();
+    }
+
+    ultimaAtualizacaoCatalogo = agora;
+    return carregarCatalogo()
+        .then(() => {
+            if (inputCodigo.value && sugestoesEstaoVisiveis()) {
+                inputCodigo.dispatchEvent(new Event("input"));
+            }
+        })
+        .catch((error) => {
+            console.warn("Falha ao sincronizar catálogo:", error);
+        });
 }
 
 function carregarDados() {
@@ -1313,25 +1347,11 @@ inputCodigo.addEventListener("input", function () {
         return;
     }
 
-    const itemExato = catalogoItens.find((item) => item.codigo === valor);
+    const itemExato = buscarPorCodigoExato(catalogoItens, valor)[0];
     inputDescricao.value = itemExato ? itemExato.descricao : "";
 
-    const termoPesquisa = normalizarTextoParaPesquisa(valor);
-    const palavrasPesquisa = termoPesquisa.split(/\s+/).filter(p => p.length > 0);
-    const matches = catalogoItens
-        .filter((item) => {
-            const codigoNormalizado = normalizarTextoParaPesquisa(item.codigo);
-            const descricaoNormalizada = normalizarTextoParaPesquisa(item.descricao);
-
-            // Verifica se o termo completo está no código ou descrição
-            if (codigoNormalizado.includes(termoPesquisa) || descricaoNormalizada.includes(termoPesquisa)) {
-                return true;
-            }
-
-            // Verifica se todas as palavras da pesquisa estão na descrição
-            return palavrasPesquisa.every(palavra => descricaoNormalizada.includes(palavra));
-        })
-        .slice(0, 5);
+    const termoPesquisa = normalizarTermoPesquisa(valor);
+    const matches = buscarItensPorCodigoPrioritario(catalogoItens, termoPesquisa, { maxResults: 5 });
 
     if (!matches.length) {
         limparSugestoes();

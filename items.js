@@ -499,16 +499,28 @@ async function calcularSaldosReais(itens) {
 }
 
 function filtrarCatalogo() {
-    const termo = normalizarBusca(inputBuscaItemCatalogo.value);
+    const termo = inputBuscaItemCatalogo.value;
 
-    if (!termo) {
+    if (!normalizarBusca(termo)) {
         return catalogoItens;
     }
 
-    return catalogoItens.filter((item) => {
-        const baseBusca = [item.codigo, item.descricao, item.localizacao].join(" ");
-        return normalizarBusca(baseBusca).includes(termo);
-    });
+    const itemsCodigoExato = buscarPorCodigoExato(catalogoItens, termo);
+    const itemsCodigoPrefixo = buscarPorInicioCodigo(catalogoItens, termo);
+    const resultadosCodigo = [...itemsCodigoExato, ...itemsCodigoPrefixo];
+
+    if (resultadosCodigo.length > 0) {
+        const vistos = new Set();
+        return resultadosCodigo.filter((item) => {
+            if (vistos.has(item.codigo)) {
+                return false;
+            }
+            vistos.add(item.codigo);
+            return true;
+        });
+    }
+
+    return buscarPorDescricao(catalogoItens, termo).sort((a, b) => a.codigo.localeCompare(b.codigo));
 }
 
 function salvarItemCatalogo() {
